@@ -2,6 +2,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.6.21"
+    kotlin("plugin.serialization") version "1.6.10"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
     application
 }
 
@@ -16,7 +18,11 @@ repositories {
 
 dependencies {
 //    implementation("javax.xml.bind:jaxb-api:2.3.1")
-    implementation("com.apptastic:rssreader:2.5.0")
+    api("com.apptastic:rssreader:2.5.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
+    implementation("com.charleskorn.kaml:kaml:0.46.0")
+    implementation("ch.qos.logback:logback-core:1.2.11")
+    implementation("ch.qos.logback:logback-classic:1.2.11")
     testImplementation(kotlin("test"))
 }
 
@@ -37,4 +43,10 @@ tasks.register<Copy>("copy") {
 
 application {
     mainClass.set("MainKt")
+}
+
+tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+    archiveBaseName.set("animedown")
+    archiveClassifier.set("")
+    archiveVersion.set("")
 }
