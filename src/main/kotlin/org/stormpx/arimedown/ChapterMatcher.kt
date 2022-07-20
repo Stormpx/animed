@@ -2,7 +2,7 @@ package org.stormpx.arimedown
 
 
 
-class RegexMatcher(pattern:String) {
+class ChapterMatcher(pattern:String): Matcher {
     companion object {
         val preProcessRegex: Regex= Regex.escapeReplacement("#chapter#").toRegex()
         val chapterRegex: Regex= "\\d+(\\.\\d*)?".toRegex()
@@ -28,7 +28,7 @@ class RegexMatcher(pattern:String) {
         }
     }
 
-    fun match(title: String): MatchResult {
+    override fun match(title: String): MatchResult {
         if (!regex.matches(title)){
             return MatchResult(false,-1.0)
         }
