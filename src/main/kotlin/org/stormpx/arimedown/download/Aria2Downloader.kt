@@ -2,12 +2,12 @@ package org.stormpx.arimedown.download
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.stormpx.arimedown.DownloaderOption
+import org.stormpx.arimedown.DownloaderConfig
 import org.stormpx.arimedown.aria2.Aria2Client
 import java.io.InputStream
 import java.net.URI
 
-class Aria2Downloader(option:DownloaderOption): Downloader {
+class Aria2Downloader(option:DownloaderConfig): Downloader {
 
     companion object{
         private val logger:Logger= LoggerFactory.getLogger(Aria2Downloader.javaClass);

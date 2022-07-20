@@ -16,12 +16,11 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.Objects
 import java.util.concurrent.*
-import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 
 class Worker(
     val dataPath: Path,
-    val animeOption: AnimeOption,
+    val animeConfig: AnimeConfig,
     val downloaders: Map<String, Downloader>,
     val scheduler: ScheduledExecutorService
 ) {
@@ -32,6 +31,8 @@ class Worker(
         }
         private val logger: Logger = LoggerFactory.getLogger(Worker.javaClass)
     }
+
+    class WorkerException(message: String?) : RuntimeException(message)
 
     @kotlinx.serialization.Serializable
     data class AnimeData(var id: String, var chapter: Double?=null,
@@ -46,9 +47,9 @@ class Worker(
 
 
     init {
-        assert(animeOption.rules.isNotEmpty())
+        assert(animeConfig.rules.isNotEmpty())
 
-        matchers = buildMatcher(animeOption.rules)
+        matchers = buildMatcher(animeConfig.rules)
     }
 
     private fun buildMatcher(rules: Array<String>): Array<Matcher> {
@@ -78,11 +79,11 @@ class Worker(
 
 
     fun id(): String {
-        return animeOption.id
+        return animeConfig.id
     }
 
-    fun isOptionChange(otherAnimeOption: AnimeOption): Boolean {
-        return Objects.equals(otherAnimeOption.id, animeOption.id) && !Objects.equals(animeOption, otherAnimeOption);
+    fun isOptionChange(otherAnimeConfig: AnimeConfig): Boolean {
+        return Objects.equals(otherAnimeConfig.id, animeConfig.id) && !Objects.equals(animeConfig, otherAnimeConfig);
     }
 
     fun tryGetTorrent(item:Item):String?{
@@ -109,60 +110,67 @@ class Worker(
     }
 
     fun start() {
-        val animeData = getAnimeData()
+        try {
+            val animeData = getAnimeData()
 
-        val response =
-            Http.client.send(
-                HttpRequest.newBuilder().GET().uri(URI.create(animeOption.rss)).build(),
-                BodyHandlers.ofInputStream()
-            )
-        logger.info("request ${animeOption.rss} status_code = ${response.statusCode()}")
-        if (response.statusCode() != 200) {
-            throw RuntimeException("")
+            val response =
+                Http.client.send(
+                    HttpRequest.newBuilder().GET().uri(URI.create(animeConfig.rss)).build(),
+                    BodyHandlers.ofInputStream()
+                )
+            logger.info("request ${animeConfig.rss} status_code = ${response.statusCode()}")
+            if (response.statusCode() != 200) {
+                throw RuntimeException("")
+            }
+            val channel = RSSReader(response.body()).read()
+
+
+            val newChapterPairs = channel.items
+                .asSequence()
+                .map {
+                    it to (matchers.map { matcher -> matcher.match(it.title) }.firstOrNull { r -> r.match } ?: MatchResult(false, null))
+                }
+                .filter { it.second.match }
+                .filter { it.second.chapter()> animeConfig.startChapter }
+                .filter { it.second.chapter() > (animeData.chapter ?: -1.0) }
+                .distinctBy { it.second.chapter }
+                .toList()
+
+            if (newChapterPairs.isEmpty()){
+                logger.info("${id()} no new chapter detected")
+                return
+            }
+            newChapterPairs.mapNotNull {
+                    val item = it.first
+                    val result = it.second
+                    try {
+                        val torrentUri = tryGetTorrent(item) ?: throw WorkerException("torrent uri not found.")
+                        val downloader = downloaders[animeConfig.downloader]
+                            ?: throw WorkerException("downloader [${animeConfig.downloader}] not found.")
+
+                        val id = downloader.downloadUri(torrentUri,animeConfig.downloadPath)
+                        logger.info("${id()}-> start download new chapter ${item.title}")
+                        return@mapNotNull it to EntryInfo(id,item.title,torrentUri,result.chapter())
+                    } catch (e: Exception) {
+                        logger.error("${id()}-> an exception occurred while downloading a new chapter ${item.title} : ${e.message}")
+                        if (e !is WorkerException){
+                            logger.error("",e)
+                        }
+
+                        null
+                    }
+                }
+                .stream()
+                .peek{ animeData.entrys.add(it.second) }
+                .map { it.first.second }
+                .max { o1, o2 -> o1.chapter().compareTo(o2.chapter()) }
+                .ifPresent {
+                    animeData.chapter=it.chapter
+                    saveAnimeData(animeData)
+                }
+        } catch (e: Exception) {
+            logger.error(e.message?: "execute failed")
         }
-        val channel = RSSReader(response.body()).read()
-
-
-        channel.items
-            .map {
-                it to (matchers.map { matcher -> matcher.match(it.title) }.firstOrNull { r -> r.match } ?: MatchResult(false, null))
-            }
-            .filter { it.second.match }
-            .filter { it.second.chapter() > (animeData.chapter ?: -1.0) }
-            .distinctBy { it.second.chapter }
-            .mapNotNull {
-                val item = it.first
-                val result = it.second
-
-                val torrentUri = tryGetTorrent(item)
-                if (torrentUri==null){
-                    logger.warn("${id()} matched item ${item.title} torrent uri not found. skip.")
-                    return@mapNotNull null
-                }
-
-                val downloader = downloaders[animeOption.downloader]
-                if (downloader==null){
-                    logger.warn("${id()} downloader ${animeOption.downloader} not found. skip.")
-                    return@mapNotNull null
-                }
-
-                try {
-                    logger.info("${id()}->title: ${item.title} try download chapter: ${result.chapter} ")
-                    val id = downloader.downloadUri(torrentUri,animeOption.downloadPath)
-                    return@mapNotNull it to EntryInfo(id,item.title,torrentUri,result.chapter())
-                } catch (e: Exception) {
-                    logger.error("",e)
-                    null
-                }
-            }
-            .stream()
-            .peek{ animeData.entrys.add(it.second) }
-            .map { it.first.second }
-            .max { o1, o2 -> o1.chapter().compareTo(o2.chapter()) }
-            .ifPresent {
-                animeData.chapter=it.chapter
-                saveAnimeData(animeData)
-            }
 
     }
 
@@ -170,8 +178,8 @@ class Worker(
         cancel()
         future = scheduler.scheduleAtFixedRate(
             { start() },
-            animeOption.refreshInterval,
-            animeOption.refreshInterval,
+            animeConfig.refreshInterval,
+            animeConfig.refreshInterval,
             TimeUnit.SECONDS
         ) as ScheduledFuture<*>
     }
@@ -191,13 +199,13 @@ class Worker(
 
         other as Worker
 
-        if (animeOption.id != other.animeOption.id) return false
+        if (animeConfig.id != other.animeConfig.id) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return animeOption.id.hashCode()
+        return animeConfig.id.hashCode()
     }
 
 

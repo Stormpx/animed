@@ -1,18 +1,14 @@
 import com.charleskorn.kaml.MissingRequiredPropertyException
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.EmptySerializersModule
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.stormpx.arimedown.AppOption
-import org.stormpx.arimedown.DownloaderOption
-import org.stormpx.arimedown.JsonRpcRequest
+import org.stormpx.arimedown.AppConfig
+import org.stormpx.arimedown.DownloaderConfig
 import org.stormpx.arimedown.Worker
-import org.stormpx.arimedown.aria2.Aria2Client
 import org.stormpx.arimedown.download.Aria2Downloader
 import org.stormpx.arimedown.download.Downloader
-import java.net.URI
 import java.nio.file.Files
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -21,7 +17,7 @@ import kotlin.io.path.Path
 
 
 
-
+val logger:Logger=LoggerFactory.getLogger("main");
 
 fun main(args: Array<String>) {
 
@@ -33,12 +29,19 @@ fun main(args: Array<String>) {
 //        println(result.chapter)
 //    }
 
-    val configPath:String= "example.yaml"
-//
+    if (args.isEmpty()){
+        error("no config specified")
+    }
+
+    val configPath:String= args[0]
+
     val threadPool = Executors.newScheduledThreadPool(1)
-//
-    DieOtaku(configPath,threadPool)
-        .start()
+    try {
+        DieOtaku(configPath,threadPool).start()
+
+    } catch (e: Exception) {
+        error(e?:"")
+    }
 
 
 }
@@ -61,18 +64,18 @@ class DieOtaku(
     private val workers = ArrayList<Worker>()
     private val downloader = HashMap<String,Downloader>()
 
-    private fun readConfig():AppOption{
-        return yaml.decodeFromStream(AppOption.serializer(),Files.newInputStream(Path(configPath)))
+    private fun readConfig():AppConfig{
+        return yaml.decodeFromStream(AppConfig.serializer(),Files.newInputStream(Path(configPath)))
     }
 
 
-    private fun assembleWorker(appOption: AppOption){
-        val animeOptions = appOption.anime;
+    private fun assembleWorker(appConfig: AppConfig){
+        val animeConfigs = appConfig.anime;
 
-        animeOptions.distinctBy { it.id }
+        animeConfigs.distinctBy { it.id }
             .filter { workers.isEmpty()||workers.any { worker ->  worker.isOptionChange(it) } }
             .forEach{ it ->
-                val worker= Worker(appOption.path(),it, downloader,threadPool)
+                val worker= Worker(appConfig.path(),it, downloader,threadPool)
                 val oldWorkers = workers.filter { existsWorker -> existsWorker.isOptionChange(it) }
                 if (oldWorkers.isNotEmpty()){
                     logger.info("worker [${worker.id()}] config change. try restart..");
@@ -89,19 +92,19 @@ class DieOtaku(
 
     }
 
-    fun newDownloader(option:DownloaderOption):Downloader{
+    fun newDownloader(option:DownloaderConfig):Downloader{
         return Aria2Downloader(option)
     }
 
 
     fun start(){
-        val option = readConfig()
+        val config = readConfig()
 
-        option.downloader.forEach {
+        config.downloader.forEach {
             downloader[it.id]=newDownloader(it)
         }
 
-        assembleWorker(option)
+        assembleWorker(config)
 
         threadPool.scheduleWithFixedDelay({
             try {
@@ -113,6 +116,7 @@ class DieOtaku(
             }
         }, delay, delay,TimeUnit.SECONDS)
 
+        logger.info("animed started.")
     }
 
 }
