@@ -17,17 +17,7 @@ import kotlin.io.path.Path
 
 
 
-val logger:Logger=LoggerFactory.getLogger("main");
-
 fun main(args: Array<String>) {
-
-//    val inputPattern = "[Anime Time] Bucchigire! - #chapter# [1080p][HEVC 10bit x265][AAC][Multi Sub] [Weekly]";
-//    var title="[Anime Time] Bucchigire! - 15.5 [1080p][HEVC 10bit x265][AAC][Multi Sub] [Weekly]";
-//
-//    val result= RegexMatcher(inputPattern).match(title)
-//    if (result.match){
-//        println(result.chapter)
-//    }
 
     if (args.isEmpty()){
         error("no config specified")
@@ -75,16 +65,23 @@ class DieOtaku(
         animeConfigs.distinctBy { it.id }
             .filter { workers.isEmpty()||workers.any { worker ->  worker.isOptionChange(it) } }
             .forEach{ it ->
-                val worker= Worker(appConfig.path(),it, downloader,threadPool)
-                val oldWorkers = workers.filter { existsWorker -> existsWorker.isOptionChange(it) }
-                if (oldWorkers.isNotEmpty()){
-                    logger.info("worker [${worker.id()}] config change. try restart..");
+                val worker = try {
+                    val worker= Worker(appConfig.path(),it, downloader,threadPool)
+                    val oldWorkers = workers.filter { existsWorker -> existsWorker.isOptionChange(it) }
+                    if (oldWorkers.isNotEmpty()){
+                        logger.info("worker [${worker.id()}] config change. try restart..");
+                    }
+                    oldWorkers.forEach{ it.cancel() }
+                    workers.removeAll(oldWorkers.toSet())
+                    worker.schedule()
+
+                    workers.add(worker)
+                    worker
+                }catch (e:Exception){
+                    logger.error(e.message);
+                    return
                 }
-                oldWorkers.forEach{ it.cancel() }
-                workers.removeAll(oldWorkers.toSet())
-                worker.schedule()
                 logger.info("worker [${worker.id()}] started..")
-                workers.add(worker)
                 if (it.immediately)
                     worker.start()
 
@@ -104,8 +101,6 @@ class DieOtaku(
             downloader[it.id]=newDownloader(it)
         }
 
-        assembleWorker(config)
-
         threadPool.scheduleWithFixedDelay({
             try {
                 val appOption = readConfig()
@@ -117,6 +112,8 @@ class DieOtaku(
         }, delay, delay,TimeUnit.SECONDS)
 
         logger.info("animed started.")
+
+        assembleWorker(config)
     }
 
 }

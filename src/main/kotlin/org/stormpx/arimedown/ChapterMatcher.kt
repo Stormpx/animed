@@ -4,26 +4,32 @@ package org.stormpx.arimedown
 
 class ChapterMatcher(pattern:String): Matcher {
     companion object {
-        val preProcessRegex: Regex= Regex.escapeReplacement("#chapter#").toRegex()
-        val chapterRegex: Regex= "\\d+(\\.\\d*)?".toRegex()
+        private val monoRegex: Regex= Regex.escapeReplacement("#mono#").toRegex()
+        private val preProcessRegex: Regex= Regex.escapeReplacement("#chapter#").toRegex()
+        private val chapterRegex: Regex= "\\d+(\\.\\d*)?".toRegex()
     }
 
-    private var index: Int=-1;
+    private var chapterIndex: Int=-1;
     private var regex: Regex;
 
     init{
-        val regex= preProcessRegex.replace(pattern) {
-            if (this.index == -1) {
-                this.index = it.range.start
+        var p=pattern
+        p= monoRegex.replace(p){
+            "\\E.*\\Q"
+        }
+
+        p= preProcessRegex.replace(p) {
+            if (this.chapterIndex == -1) {
+                this.chapterIndex = it.range.start
                 "\\E\\d+(.\\d*)?\\Q"
             } else {
                 ""
             }
         }
 
-        this.regex = ("\\Q$regex\\E").toRegex()
+        this.regex = ("\\Q$p\\E").toRegex()
 
-        if (index==-1){
+        if (chapterIndex==-1){
             throw RuntimeException("#chapter# is required.");
         }
     }
@@ -32,7 +38,7 @@ class ChapterMatcher(pattern:String): Matcher {
         if (!regex.matches(title)){
             return MatchResult(false,-1.0)
         }
-        val chapter = chapterRegex.find(title,this.index)?.value?.trim()?.toDouble()
+        val chapter = chapterRegex.find(title,this.chapterIndex)?.value?.trim()?.toDouble()
 
         return MatchResult(chapter!=null,chapter)
     }

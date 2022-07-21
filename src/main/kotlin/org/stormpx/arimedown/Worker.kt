@@ -32,7 +32,10 @@ class Worker(
         private val logger: Logger = LoggerFactory.getLogger(Worker.javaClass)
     }
 
-    class WorkerException(message: String?) : RuntimeException(message)
+    class WorkerException : RuntimeException {
+        constructor(message: String?) : super(message)
+        constructor(message: String?,cause: Throwable?) : super(message,cause)
+    }
 
     @kotlinx.serialization.Serializable
     data class AnimeData(var id: String, var chapter: Double?=null,
@@ -47,9 +50,12 @@ class Worker(
 
 
     init {
-        assert(animeConfig.rules.isNotEmpty())
-
-        matchers = buildMatcher(animeConfig.rules)
+        try {
+            assert(animeConfig.rules.isNotEmpty())
+            matchers = buildMatcher(animeConfig.rules)
+        } catch (e: Exception) {
+            throw WorkerException(e.message,e)
+        }
     }
 
     private fun buildMatcher(rules: Array<String>): Array<Matcher> {
@@ -86,7 +92,7 @@ class Worker(
         return Objects.equals(otherAnimeConfig.id, animeConfig.id) && !Objects.equals(animeConfig, otherAnimeConfig);
     }
 
-    fun tryGetTorrent(item:Item):String?{
+    private fun tryGetTorrent(item:Item):String?{
 
         val enclosure = item.enclosure
         if (enclosure !=null){
