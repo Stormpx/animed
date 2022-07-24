@@ -30,7 +30,7 @@ fun main(args: Array<String>) {
         DieOtaku(configPath,threadPool).start()
 
     } catch (e: Exception) {
-        error(e?:"")
+        error(e)
     }
 
 
@@ -42,8 +42,8 @@ class DieOtaku(
     ){
 
     companion object{
-        private val logger: Logger = LoggerFactory.getLogger(DieOtaku.javaClass);
-        private val delay: Long = 10;
+        private val logger: Logger = LoggerFactory.getLogger(DieOtaku::class.java)
+        private const val delay: Long = 10
         val yaml = Yaml(EmptySerializersModule, YamlConfiguration(
             encodeDefaults = false,
             strictMode = false
@@ -63,7 +63,7 @@ class DieOtaku(
         val animeConfigs = appConfig.anime;
 
         animeConfigs.distinctBy { it.id }
-            .filter { workers.isEmpty()||workers.any { worker ->  worker.isOptionChange(it) } }
+            .filter { workers.isEmpty()||workers.any { worker ->  worker.isOptionChange(it) }||workers.all { worker -> !worker.isSameId(it.id) } }
             .forEach{ it ->
                 val worker = try {
                     val worker= Worker(appConfig.path(),it, downloader,threadPool)
@@ -83,9 +83,12 @@ class DieOtaku(
                 }
                 logger.info("worker [${worker.id()}] started..")
                 if (it.immediately)
-                    worker.start()
+                    threadPool.execute(worker::start)
 
             }
+
+        workers.filter { worker -> !animeConfigs.any { worker.isSameId(it.id)  } }
+            .forEach{ worker -> worker.cancel() }
 
     }
 
@@ -108,6 +111,8 @@ class DieOtaku(
             } catch (e: MissingRequiredPropertyException) {
                 logger.error("unable read config because: at line ${e.location.line} column ${e.location.column} ${e.message}")
 //                e.printStackTrace()
+            }catch (e: Exception){
+                logger.error(e.message)
             }
         }, delay, delay,TimeUnit.SECONDS)
 

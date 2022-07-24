@@ -19,7 +19,7 @@ import java.util.concurrent.*
 import kotlin.io.path.exists
 
 class Worker(
-    val dataPath: Path,
+    dataPath: Path,
     val animeConfig: AnimeConfig,
     val downloaders: Map<String, Downloader>,
     val scheduler: ScheduledExecutorService
@@ -29,7 +29,7 @@ class Worker(
 
             prettyPrint=true
         }
-        private val logger: Logger = LoggerFactory.getLogger(Worker.javaClass)
+        private val logger: Logger = LoggerFactory.getLogger(Worker::class.java)
     }
 
     class WorkerException : RuntimeException {
@@ -88,8 +88,12 @@ class Worker(
         return animeConfig.id
     }
 
+    fun isSameId(otherId:String):Boolean{
+        return Objects.equals(id(),otherId)
+    }
+
     fun isOptionChange(otherAnimeConfig: AnimeConfig): Boolean {
-        return Objects.equals(otherAnimeConfig.id, animeConfig.id) && !Objects.equals(animeConfig, otherAnimeConfig);
+        return isSameId(otherAnimeConfig.id) && !Objects.equals(animeConfig, otherAnimeConfig);
     }
 
     private fun tryGetTorrent(item:Item):String?{
