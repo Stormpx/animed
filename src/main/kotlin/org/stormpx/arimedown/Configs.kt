@@ -7,10 +7,16 @@ import kotlin.io.path.Path
 
 @Serializable
 data class AppConfig(
+    val debug: Boolean =false,
     @SerialName("data_path")
     val dataPath:String,
+    @SerialName("default_target")
+    val defaultTarget:String,
     val anime:Array<AnimeConfig>,
-    val downloader: Array<DownloaderConfig>){
+    val downloader: Array<DownloaderConfig>,
+    val email:EmailConfig? = null,
+    val users: Array<UserConfig>? = null
+    ){
 
     fun path(): Path {
         return Path(dataPath)
@@ -30,7 +36,8 @@ data class AnimeConfig(
     val rules:Array<String>,
     val downloader: String,
     @SerialName("download_path")
-    val downloadPath: String
+    val downloadPath: String,
+    val targets: Array<String>?=null,
     ){
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -46,6 +53,7 @@ data class AnimeConfig(
         if (!rules.contentEquals(other.rules)) return false
         if (downloader != other.downloader) return false
         if (downloadPath != other.downloadPath) return false
+        if (!targets.contentEquals(other.targets)) return false
 
         return true
     }
@@ -59,6 +67,7 @@ data class AnimeConfig(
         result = 31 * result + rules.contentHashCode()
         result = 31 * result + downloader.hashCode()
         result = 31 * result + downloadPath.hashCode()
+        result = 31 * result + targets.contentHashCode()
         return result
     }
 }
@@ -69,4 +78,16 @@ data class DownloaderConfig(
     val uri:String,
     val token:String?=null
 )
+@Serializable
+data class EmailConfig(
+    val host: String,
+    val port: Int,
+    val username: String,
+    val password:String
+)
 
+@Serializable
+data class UserConfig(
+    val name:String,
+    val email:String
+)

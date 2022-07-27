@@ -17,8 +17,8 @@ repositories {
 }
 
 dependencies {
-//    implementation("javax.xml.bind:jaxb-api:2.3.1")
-    api("com.apptastic:rssreader:2.5.0")
+    implementation("org.simplejavamail:simple-java-mail:7.4.0")
+//    api("com.apptastic:rssreader:2.5.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("com.charleskorn.kaml:kaml:0.46.0")
     implementation("ch.qos.logback:logback-core:1.2.11")

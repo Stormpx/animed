@@ -20,10 +20,10 @@ import kotlin.io.path.exists
 
 class Worker(
     dataPath: Path,
-    val animeConfig: AnimeConfig,
-    val downloaders: Map<String, Downloader>,
-    val scheduler: ScheduledExecutorService
-) {
+    private val animeConfig: AnimeConfig,
+    private val context: AnimedContext,
+
+    ) {
     companion object {
         private val json= Json{
 
@@ -155,11 +155,12 @@ class Worker(
                     val result = it.second
                     try {
                         val torrentUri = tryGetTorrent(item) ?: throw WorkerException("torrent uri not found.")
-                        val downloader = downloaders[animeConfig.downloader]
+                        val downloader = context.getDownloader(animeConfig.downloader)
                             ?: throw WorkerException("downloader [${animeConfig.downloader}] not found.")
 
                         val id = downloader.downloadUri(torrentUri,animeConfig.downloadPath)
                         logger.info("${id()}-> start download new chapter ${item.title}")
+                        context.notice(AnimedContext.AnimeMessage(animeConfig.targets?: emptyArray(),id(),item.title,item.description))
                         return@mapNotNull it to EntryInfo(id,item.title,torrentUri,result.chapter())
                     } catch (e: Exception) {
                         logger.error("${id()}-> an exception occurred while downloading a new chapter ${item.title} : ${e.message}")
@@ -186,7 +187,7 @@ class Worker(
 
     fun schedule() {
         cancel()
-        future = scheduler.scheduleAtFixedRate(
+        future = context.scheduler().scheduleAtFixedRate(
             { start() },
             animeConfig.refreshInterval,
             animeConfig.refreshInterval,
