@@ -93,8 +93,9 @@ class DieOtaku (
 
             }
 
-        workers.filter { worker -> !animeConfigs.any { worker.isSameId(it.id)  } }
-            .forEach{ worker -> worker.cancel() }
+        val canceledWorkers = workers.filter { worker -> !animeConfigs.any { worker.isSameId(it.id)  } }
+        canceledWorkers.forEach{ worker -> worker.cancel() }
+        workers.removeAll(canceledWorkers.toSet())
 
     }
 
