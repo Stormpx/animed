@@ -14,6 +14,7 @@ import java.net.http.HttpResponse.BodyHandlers
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.time.Duration
 import java.util.Objects
 import java.util.concurrent.*
 import kotlin.io.path.exists
@@ -122,10 +123,9 @@ class Worker(
     fun start() {
         try {
             val animeData = getAnimeData()
-
             val response =
                 Http.client.send(
-                    HttpRequest.newBuilder().GET().uri(URI.create(animeConfig.rss)).build(),
+                    HttpRequest.newBuilder().GET().uri(URI.create(animeConfig.rss)).timeout(Duration.ofMinutes(1)).build(),
                     BodyHandlers.ofInputStream()
                 )
             logger.info("request ${animeConfig.rss} status_code = ${response.statusCode()}")

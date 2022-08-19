@@ -20,7 +20,7 @@ class ChapterMatcher(pattern:String): Matcher {
 
         p= preProcessRegex.replace(p) {
             if (this.chapterIndex == -1) {
-                this.chapterIndex = it.range.start
+                this.chapterIndex = it.range.first
                 "\\E\\d+(.\\d*)?\\Q"
             } else {
                 ""
