@@ -1,7 +1,7 @@
 package com.stormpx.arimedown
 
 import org.junit.jupiter.api.Test
-import org.stormpx.arimedown.ChapterMatcher
+import org.stormpx.animed.ChapterMatcher
 import kotlin.test.assertEquals
 
 class ChapterMatcherTests {
@@ -49,7 +49,23 @@ class ChapterMatcherTests {
                     TestResult("[织梦字幕组]Summer Time Rendering 夏日重现[13][2022.07.08][1080P][GB_JP][AVC]",true,13.0),
                     TestResult("[织梦字幕组]Summer Time Rendering 夏日重现[13][2022.07.08][720P][JP][AVCC]",true,13.0),
                 )
+            ),
+            TestCase("【#mono#】【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][#chapter#][1080p][简日双语][招募翻译] [#mono#]",
+                arrayOf(
+                    TestResult("【恭喜复播】【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][08][1080p][简日双语][招募翻译] [576.3MB]",true,8.0),
+                )
+            ),
+            TestCase("#mono#【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][#chapter#][1080p][简日双语][招募翻译] [#mono#]",
+                arrayOf(
+                    TestResult("【恭喜复播】【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][08][1080p][简日双语][招募翻译] [576.3MB]",true,8.0),
+                )
+            ),
+            TestCase("#mono#【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][#chapter#][1080p][简日双语][招募翻译]#mono#",
+                arrayOf(
+                    TestResult("【恭喜复播】【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][08][1080p][简日双语][招募翻译] [576.3MB]",true,8.0),
+                )
             )
+
         )
 
         testcases.forEach {
@@ -65,7 +81,9 @@ class ChapterMatcherTests {
         }
 
 
-
+//        var matcher = ChapterMatcher("【#mono#】【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][#chapter#][1080p][简日双语][招募翻译] [#mono#]")
+//        val r =matcher.match("【恭喜复播】【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][08][1080p][简日双语][招募翻译] [576.3MB]")
+//        println(r)
 
     }
 

@@ -1,4 +1,4 @@
-package org.stormpx.arimedown
+package org.stormpx.animed
 
 import java.net.http.HttpClient
 import java.time.Duration

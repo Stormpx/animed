@@ -10,15 +10,13 @@ import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.stormpx.arimedown.*
-import org.stormpx.arimedown.download.Aria2Downloader
-import org.stormpx.arimedown.download.Downloader
+import org.stormpx.animed.*
+import org.stormpx.animed.download.Aria2Downloader
+import org.stormpx.animed.download.Downloader
 import java.nio.file.Files
 import java.util.Objects
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.Path
 

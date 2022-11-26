@@ -1,4 +1,4 @@
-package org.stormpx.arimedown
+package org.stormpx.animed
 
 import kotlinx.serialization.Required
 import kotlinx.serialization.json.JsonElement

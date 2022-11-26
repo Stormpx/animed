@@ -1,9 +1,9 @@
-package org.stormpx.arimedown.download
+package org.stormpx.animed.download
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.stormpx.arimedown.DownloaderConfig
-import org.stormpx.arimedown.aria2.Aria2Client
+import org.stormpx.animed.DownloaderConfig
+import org.stormpx.animed.aria2.Aria2Client
 import java.io.InputStream
 import java.net.URI
 

@@ -1,6 +1,6 @@
-package org.stormpx.arimedown
+package org.stormpx.animed
 
-import org.stormpx.arimedown.download.Downloader
+import org.stormpx.animed.download.Downloader
 import java.util.concurrent.ScheduledExecutorService
 
 interface AnimedContext {

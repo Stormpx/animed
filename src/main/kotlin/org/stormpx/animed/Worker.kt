@@ -1,11 +1,10 @@
-package org.stormpx.arimedown
+package org.stormpx.animed
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.stormpx.arimedown.download.Downloader
 import org.stormpx.rss.Item
 import org.stormpx.rss.RSSReader
 import java.net.URI
@@ -138,7 +137,7 @@ class Worker(
             val newChapterPairs = channel.items
                 .asSequence()
                 .map {
-                    it to (matchers.map { matcher -> matcher.match(it.title) }.firstOrNull { r -> r.match } ?: MatchResult(false, null))
+                    it to (matchers.map { matcher -> matcher.match(it.title.trim()) }.firstOrNull { r -> r.match } ?: MatchResult(false, null))
                 }
                 .filter { it.second.match }
                 .filter { it.second.chapter()> animeConfig.startChapter }

@@ -1,4 +1,4 @@
-package org.stormpx.arimedown.download
+package org.stormpx.animed.download
 
 import java.io.InputStream
 

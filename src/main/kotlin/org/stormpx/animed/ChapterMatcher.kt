@@ -1,4 +1,4 @@
-package org.stormpx.arimedown
+package org.stormpx.animed
 
 
 
@@ -21,7 +21,8 @@ class ChapterMatcher(pattern:String): Matcher {
         p= preProcessRegex.replace(p) {
             if (this.chapterIndex == -1) {
                 this.chapterIndex = it.range.first
-                "\\E\\d+(.\\d*)?\\Q"
+//                "\\E\\d+(.\\d*)?\\Q"
+                "\\E(?<ep>\\d+(.\\d*)?)\\Q"
             } else {
                 ""
             }
@@ -38,7 +39,8 @@ class ChapterMatcher(pattern:String): Matcher {
         if (!regex.matches(title)){
             return MatchResult(false,-1.0)
         }
-        val chapter = chapterRegex.find(title,this.chapterIndex)?.value?.trim()?.toDouble()
+//        val chapter = chapterRegex.find(title,this.chapterIndex)?.value?.trim()?.toDouble()
+        val chapter = regex.find(title)?.groups?.get("ep")?.value?.trim()?.toDouble()
 
         return MatchResult(chapter!=null,chapter)
     }

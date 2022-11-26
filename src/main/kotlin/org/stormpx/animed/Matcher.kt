@@ -1,4 +1,4 @@
-package org.stormpx.arimedown
+package org.stormpx.animed
 
 interface Matcher {
 

@@ -1,17 +1,16 @@
-package org.stormpx.arimedown.aria2
+package org.stormpx.animed.aria2
 
 import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import org.stormpx.arimedown.Http
-import org.stormpx.arimedown.JsonRpcRequest
-import org.stormpx.arimedown.JsonRpcResult
+import org.stormpx.animed.Http
+import org.stormpx.animed.JsonRpcRequest
+import org.stormpx.animed.JsonRpcResult
 import java.io.InputStream
 import java.net.URI
 import java.net.http.HttpRequest
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
-import java.nio.charset.StandardCharsets
+import java.time.Duration
 import java.util.Base64
 import java.util.UUID
 
@@ -48,6 +47,7 @@ class Aria2Client(
         )
         val response = Http.client
             .send(HttpRequest.newBuilder(serverUri)
+                .timeout(Duration.ofMinutes(1))
                 .header("content-type","application/json;charset=uft-8")
                 .POST(BodyPublishers.ofString(json)).build(),BodyHandlers.ofInputStream());
 
@@ -78,6 +78,7 @@ class Aria2Client(
         )
         val response = Http.client
             .send(HttpRequest.newBuilder(serverUri)
+                .timeout(Duration.ofMinutes(1))
                 .header("content-type","application/json;charset=uft-8")
                 .POST(BodyPublishers.ofString(json)).build(),BodyHandlers.ofInputStream());
 
