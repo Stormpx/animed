@@ -137,7 +137,7 @@ class DieOtaku (
             try {
                 val appConfig = readConfig()
                 latestConfig=appConfig
-                users = config.users?: emptyArray()
+                users = appConfig.users?: emptyArray()
                 assembleWorker(appConfig)
             } catch (e: MissingRequiredPropertyException) {
                 logger.error("unable read config because: at line ${e.location.line} column ${e.location.column} ${e.message}")
