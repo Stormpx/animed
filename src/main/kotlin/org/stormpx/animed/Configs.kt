@@ -15,7 +15,8 @@ data class AppConfig(
     val anime:Array<AnimeConfig>,
     val downloader: Array<DownloaderConfig>,
     val email:EmailConfig? = null,
-    val users: Array<UserConfig>? = null
+    val users: Array<UserConfig>? = null,
+    val proxies: Array<String>?=null
     ){
 
     fun path(): Path {
@@ -23,6 +24,8 @@ data class AppConfig(
     }
 
 }
+
+private val idRegex: Regex= Regex.escapeReplacement("#id#").toRegex()
 
 @Serializable
 data class AnimeConfig(
@@ -33,12 +36,18 @@ data class AnimeConfig(
     val startChapter: Double = -1.0,
     @SerialName("refresh_interval")
     val refreshInterval: Long =3600,
-    val rules:Array<String>,
+    val rules:Array<String>?=null,
+    val titles:Array<String>?=null,
     val downloader: String,
     @SerialName("download_path")
     val downloadPath: String,
     val targets: Array<String>?=null,
     ){
+
+    fun downloadPath(): String{
+        return downloadPath.replace(idRegex,id)
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -50,10 +59,20 @@ data class AnimeConfig(
         if (immediately != other.immediately) return false
         if (startChapter != other.startChapter) return false
         if (refreshInterval != other.refreshInterval) return false
-        if (!rules.contentEquals(other.rules)) return false
+        if (rules != null) {
+            if (other.rules == null) return false
+            if (!rules.contentEquals(other.rules)) return false
+        } else if (other.rules != null) return false
+        if (titles != null) {
+            if (other.titles == null) return false
+            if (!titles.contentEquals(other.titles)) return false
+        } else if (other.titles != null) return false
         if (downloader != other.downloader) return false
         if (downloadPath != other.downloadPath) return false
-        if (!targets.contentEquals(other.targets)) return false
+        if (targets != null) {
+            if (other.targets == null) return false
+            if (!targets.contentEquals(other.targets)) return false
+        } else if (other.targets != null) return false
 
         return true
     }
@@ -64,12 +83,14 @@ data class AnimeConfig(
         result = 31 * result + immediately.hashCode()
         result = 31 * result + startChapter.hashCode()
         result = 31 * result + refreshInterval.hashCode()
-        result = 31 * result + rules.contentHashCode()
+        result = 31 * result + (rules?.contentHashCode() ?: 0)
+        result = 31 * result + (titles?.contentHashCode() ?: 0)
         result = 31 * result + downloader.hashCode()
         result = 31 * result + downloadPath.hashCode()
-        result = 31 * result + targets.contentHashCode()
+        result = 31 * result + (targets?.contentHashCode() ?: 0)
         return result
     }
+
 }
 
 @Serializable

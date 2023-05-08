@@ -1,4 +1,4 @@
-package com.stormpx.arimedown
+package org.stormpx.animed
 
 import org.junit.jupiter.api.Test
 import org.stormpx.animed.ChapterMatcher
@@ -12,8 +12,6 @@ class ChapterMatcherTests {
 
     @Test
     fun testMatch(){
-        val inputPattern = "[Anime Time] Bucchigire! - #chapter# [1080p][HEVC 10bit x265][AAC][Multi Sub] [Weekly]";
-
         val testcases = arrayOf(
             TestCase(
                 "[dwadwa dwadw] Bucchigire! - #chapter# [1080p][HEVC 10bit x265][AAC][Multi Sub] [Weekly]",
@@ -63,9 +61,15 @@ class ChapterMatcherTests {
             TestCase("#mono#【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][#chapter#][1080p][简日双语][招募翻译]#mono#",
                 arrayOf(
                     TestResult("【恭喜复播】【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][08][1080p][简日双语][招募翻译] [576.3MB]",true,8.0),
+                    TestResult("【喵萌奶茶屋】★10月新番★[异世界舅舅/Isekai Ojisan][11][1080p][简日双语][招募翻译]",true,11.0)
+                )
+            ),
+            TestCase("[ANi] InSpectre S2 -#mono#虚构推理 第二季 - #chapter# [1080P][#mono#][#mono#][AAC AVC][CHT][MP4]#mono#",
+                arrayOf(
+                    TestResult("[ANi] InSpectre S2 - 虚构推理 第二季 - 03 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]",true,3.0),
+                    TestResult("[ANi] InSpectre S2 -  虚构推理 第二季 - 03 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]",true,3.0),
                 )
             )
-
         )
 
         testcases.forEach {

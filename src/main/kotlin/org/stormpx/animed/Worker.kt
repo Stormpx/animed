@@ -18,7 +18,7 @@ import java.util.Objects
 import java.util.concurrent.*
 import kotlin.io.path.exists
 
-class Worker(
+open class Worker(
     dataPath: Path,
     private val animeConfig: AnimeConfig,
     private val context: AnimedContext,
@@ -51,8 +51,10 @@ class Worker(
 
     init {
         try {
-            assert(animeConfig.rules.isNotEmpty())
-            matchers = buildMatcher(animeConfig.rules)
+            val title:Array<Matcher> = animeConfig.titles?.map { TitleMatcher(it) }?.toTypedArray()?: emptyArray()
+            val rules:Array<Matcher> = animeConfig.rules?.map { ChapterMatcher(it) }?.toTypedArray()?: emptyArray()
+            matchers = title+rules
+            assert(matchers.isNotEmpty())
         } catch (e: Exception) {
             throw WorkerException(e.message,e)
         }
@@ -62,7 +64,10 @@ class Worker(
         return rules.map { ChapterMatcher(it) }.toTypedArray()
     }
 
-    private fun getAnimeData(): AnimeData {
+    open protected fun getAnimeData(): AnimeData {
+        if (!Animed.animed.isSafe(path.parent)){
+            throw RuntimeException("${path.parent} is not safe")
+        }
         Files.createDirectories(path.parent)
         if (!path.exists()){
             return AnimeData(id(), -1.0, ArrayList())
@@ -77,7 +82,10 @@ class Worker(
         }
     }
 
-    private fun saveAnimeData(anime:AnimeData){
+    open protected fun saveAnimeData(anime:AnimeData){
+        if (!Animed.animed.isSafe(path.parent)){
+            throw RuntimeException("${path.parent} is not safe")
+        }
         anime.entrys.sortWith { o1, o2 -> o2.chapter.compareTo(o1.chapter) }
 
         json.encodeToStream(anime,Files.newOutputStream(path,StandardOpenOption.CREATE,StandardOpenOption.WRITE,StandardOpenOption.TRUNCATE_EXISTING))
@@ -133,7 +141,6 @@ class Worker(
             }
             val channel = RSSReader(response.body()).read()
 
-
             val newChapterPairs = channel.items
                 .asSequence()
                 .map {
@@ -157,8 +164,8 @@ class Worker(
                         val downloader = context.getDownloader(animeConfig.downloader)
                             ?: throw WorkerException("downloader [${animeConfig.downloader}] not found.")
 
-                        val id = downloader.downloadUri(torrentUri,animeConfig.downloadPath)
-                        logger.info("${id()}-> start download new chapter ${item.title}")
+                        val id = downloader.downloadUri(torrentUri,animeConfig.downloadPath())
+                        logger.info("${id()}-> start download new chapter ${result.chapter} ${item.title}")
                         context.notice(AnimedContext.AnimeMessage(animeConfig.targets?: emptyArray(),id(),item.title,item.description))
                         return@mapNotNull it to EntryInfo(id,item.title,torrentUri,result.chapter())
                     } catch (e: Exception) {

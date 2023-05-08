@@ -124,6 +124,7 @@ class DieOtaku (
 
     fun start(){
         val config = readConfig()
+        Animed.animed.markDir(config.path())
         latestConfig=config
         config.downloader.forEach {
             downloader[it.id]=newDownloader(it)
@@ -133,11 +134,15 @@ class DieOtaku (
 
         users = config.users?: emptyArray()
 
+        config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
+
         threadPool.scheduleWithFixedDelay({
             try {
                 val appConfig = readConfig()
                 latestConfig=appConfig
+                Animed.animed.markDir(appConfig.path())
                 users = appConfig.users?: emptyArray()
+                config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
                 assembleWorker(appConfig)
             } catch (e: MissingRequiredPropertyException) {
                 logger.error("unable read config because: at line ${e.location.line} column ${e.location.column} ${e.message}")
