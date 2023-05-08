@@ -13,7 +13,7 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenLocal()
     mavenCentral()
-    jcenter()
+//    jcenter()
 }
 
 dependencies {
@@ -34,10 +34,6 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "17"
 }
 
-tasks.register<Copy>("copy") {
-    from(layout.projectDirectory.file("src/main/resources/jaxb.index"))
-    into(layout.buildDirectory.dir("classes/kotlin/main/org/stormpx/arimedown"))
-}
 
 
 
