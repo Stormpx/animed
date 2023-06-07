@@ -1,3 +1,4 @@
+import ch.qos.logback.classic.Level
 import com.charleskorn.kaml.MissingRequiredPropertyException
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
@@ -14,12 +15,11 @@ import org.stormpx.animed.*
 import org.stormpx.animed.download.Aria2Downloader
 import org.stormpx.animed.download.Downloader
 import java.nio.file.Files
-import java.util.Objects
+import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.Path
-
 
 
 fun main(args: Array<String>) {
@@ -122,27 +122,38 @@ class DieOtaku (
 
     }
 
-    fun start(){
-        val config = readConfig()
+    private fun setLogLevel(level:Level){
+        val root = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as ch.qos.logback.classic.Logger
+        root.level = level
+    }
+    private fun handleNewConfig(config:AppConfig){
         Animed.animed.markDir(config.path())
         latestConfig=config
+        setLogLevel(if(config.debug){Level.DEBUG}else{Level.INFO})
+        users = config.users?: emptyArray()
+        config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
+    }
+
+    fun start(){
+        val config = readConfig()
+
+        handleNewConfig(config)
+
+//        users = config.users?: emptyArray()
+//        config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
+
         config.downloader.forEach {
             downloader[it.id]=newDownloader(it)
         }
 
         buildMailer(config)
 
-        users = config.users?: emptyArray()
-
-        config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
-
         threadPool.scheduleWithFixedDelay({
             try {
                 val appConfig = readConfig()
-                latestConfig=appConfig
-                Animed.animed.markDir(appConfig.path())
-                users = appConfig.users?: emptyArray()
-                config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
+                handleNewConfig(appConfig)
+//                users = appConfig.users?: emptyArray()
+//                config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
                 assembleWorker(appConfig)
             } catch (e: MissingRequiredPropertyException) {
                 logger.error("unable read config because: at line ${e.location.line} column ${e.location.column} ${e.message}")

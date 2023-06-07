@@ -14,7 +14,7 @@ class TitleMatcher(baseTitle:String) : Matcher {
     private val expectedTitle:AnimeTitle= parser.parse(baseTitle)
 
     init {
-        logger.info("parse base: '{}'. result: {}",baseTitle,expectedTitle);
+        logger.debug("parse input title: '{}'. result: {}",baseTitle,expectedTitle);
     }
 
     private fun isSimilarExpect(title:AnimeTitle): Boolean{
