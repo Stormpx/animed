@@ -2,10 +2,10 @@ package org.stormpx.animed
 
 
 
-class ChapterMatcher(pattern:String): Matcher {
+class EpisodeMatcher(pattern:String): Matcher {
     companion object {
         private val monoRegex: Regex= Regex.escapeReplacement("#mono#").toRegex()
-        private val preProcessRegex: Regex= Regex.escapeReplacement("#chapter#").toRegex()
+        private val preProcessRegex: Regex= Regex.escapeReplacement("#ep#").toRegex()
         private val chapterRegex: Regex= "\\d+(\\.\\d*)?".toRegex()
     }
 
@@ -31,7 +31,7 @@ class ChapterMatcher(pattern:String): Matcher {
         this.regex = ("\\Q$p\\E").toRegex()
 
         if (chapterIndex==-1){
-            throw RuntimeException("#chapter# is required.");
+            throw RuntimeException("#ep# is required.");
         }
     }
 

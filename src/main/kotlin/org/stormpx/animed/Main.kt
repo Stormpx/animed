@@ -20,6 +20,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.Path
+import kotlin.io.path.exists
 
 
 fun main(args: Array<String>) {
@@ -27,7 +28,7 @@ fun main(args: Array<String>) {
     if (args.isEmpty()){
         error("no config specified")
     }
-
+    System.setProperty("jdk.httpclient.keepalive.timeout","0");
     val configPath:String= args[0]
     var id = 1;
     val threadPool = Executors.newScheduledThreadPool(1) {
@@ -127,6 +128,9 @@ class DieOtaku (
         root.level = level
     }
     private fun handleNewConfig(config:AppConfig){
+        if (!config.path().exists()){
+            Files.createDirectories(config.path())
+        }
         Animed.animed.markDir(config.path())
         latestConfig=config
         setLogLevel(if(config.debug){Level.DEBUG}else{Level.INFO})

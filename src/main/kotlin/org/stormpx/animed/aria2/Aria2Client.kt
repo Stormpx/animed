@@ -10,6 +10,7 @@ import java.net.URI
 import java.net.http.HttpRequest
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.Base64
 import java.util.UUID
@@ -50,7 +51,6 @@ class Aria2Client(
                 .timeout(Duration.ofMinutes(1))
                 .header("content-type","application/json;charset=uft-8")
                 .POST(BodyPublishers.ofString(json)).build(),BodyHandlers.ofInputStream());
-
         if (response.statusCode()!=200){
 //            println(response.body().readAllBytes().toString(StandardCharsets.UTF_8))
             throw RuntimeException("request aria2.addUri return statuscode ${response.statusCode()}");

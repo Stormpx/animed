@@ -1,5 +1,6 @@
 package org.stormpx.animed
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
@@ -38,7 +39,7 @@ open class Worker(
     }
 
     @kotlinx.serialization.Serializable
-    data class AnimeData(var id: String, var chapter: Double?=null,
+    data class AnimeData(var id: String, @SerialName("chapter")var episode: Double?=null,
                          val entrys:ArrayList<EntryInfo> = ArrayList())
     @kotlinx.serialization.Serializable
     data class EntryInfo(val id:String,val title:String,val link:String,val chapter:Double)
@@ -52,7 +53,7 @@ open class Worker(
     init {
         try {
             val title:Array<Matcher> = animeConfig.titles?.map { TitleMatcher(it) }?.toTypedArray()?: emptyArray()
-            val rules:Array<Matcher> = animeConfig.rules?.map { ChapterMatcher(it) }?.toTypedArray()?: emptyArray()
+            val rules:Array<Matcher> = animeConfig.patterns?.map { EpisodeMatcher(it) }?.toTypedArray()?: emptyArray()
             matchers = title+rules
             assert(matchers.isNotEmpty())
         } catch (e: Exception) {
@@ -61,7 +62,7 @@ open class Worker(
     }
 
     private fun buildMatcher(rules: Array<String>): Array<Matcher> {
-        return rules.map { ChapterMatcher(it) }.toTypedArray()
+        return rules.map { EpisodeMatcher(it) }.toTypedArray()
     }
 
     open protected fun getAnimeData(): AnimeData {
@@ -130,6 +131,13 @@ open class Worker(
     fun start() {
         try {
             val animeData = getAnimeData()
+            animeConfig.finalEpisode?.let {finalEp->
+                animeData.episode?.let { ep->
+                    if (ep.compareTo(finalEp)>=0){
+                        return@start
+                    }
+                }
+            }
             val response =
                 Http.client.send(
                     HttpRequest.newBuilder().GET().uri(URI.create(animeConfig.rss)).timeout(Duration.ofMinutes(1)).build(),
@@ -147,8 +155,8 @@ open class Worker(
                     it to (matchers.map { matcher -> matcher.match(it.title.trim()) }.firstOrNull { r -> r.match } ?: MatchResult(false, null))
                 }
                 .filter { it.second.match }
-                .filter { it.second.chapter()> animeConfig.startChapter }
-                .filter { it.second.chapter() > (animeData.chapter ?: -1.0) }
+                .filter { it.second.chapter()> animeConfig.startEpisode }
+                .filter { it.second.chapter() > (animeData.episode ?: -1.0) }
                 .distinctBy { it.second.chapter }
                 .toList()
 
@@ -182,7 +190,7 @@ open class Worker(
                 .map { it.first.second }
                 .max { o1, o2 -> o1.chapter().compareTo(o2.chapter()) }
                 .ifPresent {
-                    animeData.chapter=it.chapter
+                    animeData.episode=it.chapter
                     saveAnimeData(animeData)
                 }
         } catch (e: Exception) {
