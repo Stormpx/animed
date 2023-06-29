@@ -1,3 +1,3 @@
 
-rootProject.name = "arimedown"
+rootProject.name = "animed"
 

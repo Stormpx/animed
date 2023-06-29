@@ -42,7 +42,7 @@ application {
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
-    archiveBaseName.set("animedown")
+    archiveBaseName.set("animed")
     archiveClassifier.set("")
     archiveVersion.set("")
 }

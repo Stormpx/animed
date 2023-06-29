@@ -6,6 +6,6 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN echo 'Asia/Shanghai' >/etc/timezone
 
 
-COPY "animedown.jar" "/app.jar"
+COPY "animed.jar" "/app.jar"
 
 ENTRYPOINT [ "java" , "-jar",  "/app.jar" ]
