@@ -35,7 +35,7 @@ public class TitleParserTests {
             new TitleTestCase("[Skymoon-Raws] 【我推的孩子】 / Oshi no Ko - 04 [ViuTV][WEB-RIP][1080p][AVC AAC][CHT][SRT][MKV](先行版本)",
                     AnimeTitleBuilder.builder().subGroup("Skymoon-Raws").addAnimeTitle("我推的孩子").addAnimeTitle("OshinoKo").episode(4.0).videoSourceName("ViuTV").videoSourceType("WEB-RIP").videoResolution("1080p").language("CHT").build()),
             new TitleTestCase("[北宇治字幕组&霜庭云花Sub&氢气烤肉架]【我推的孩子】/【Oshi no ko】[03 V2][Webrip][1080p][HEVC_AAC][简繁日内封]",
-                    AnimeTitleBuilder.builder().subGroup("北宇治字幕组&霜庭云花Sub&氢气烤肉架").animeTitle(List.of("我推的孩子","Oshinoko")).episode(3.0).videoSourceType("Webrip").videoResolution("1080p").language("简繁日内封").build()),
+                    AnimeTitleBuilder.builder().subGroup("北宇治字幕组&霜庭云花Sub&氢气烤肉架").animeTitle(List.of("我推的孩子","Oshinoko")).episode(3.0).subVersion(2).videoSourceType("Webrip").videoResolution("1080p").language("简繁日内封").build()),
             new TitleTestCase("[豌豆字幕组&风之圣殿字幕组&LoliHouse] 鬼灭之刃 刀匠村篇 04(48) / Kimetsu no Yaiba - 48 [WebRip 1080p HEVC-10bit AAC][简繁外挂字幕]",
                     AnimeTitleBuilder.builder().subGroup("豌豆字幕组&风之圣殿字幕组&LoliHouse").animeTitle(List.of("鬼灭之刃刀匠村篇04","KimetsunoYaiba")).episode(48.0).videoSourceType("WebRip").videoResolution("1080p").language("简繁外挂字幕").build()),
 
@@ -55,6 +55,10 @@ public class TitleParserTests {
 
             new TitleTestCase("[爱恋字幕社&漫猫字幕社] 水星领航员/ARIA The ANIMATION (01-13Fin BDRIP 1080p AVC AAC MP4 2005年10月 简中)",
                     AnimeTitleBuilder.builder().subGroup("爱恋字幕社&漫猫字幕社").animeTitle(List.of("水星领航员/ARIATheANIMATION")).episode(1.0).videoResolution("1080p").videoSourceType("BDRIP").language("简中").build())
+,
+            new TitleTestCase("[北宇治字幕组] 葬送的芙莉莲 / Sousou no Frieren [01v2][WebRip][1080p][HEVC_AAC][简繁日内封]",
+                    AnimeTitleBuilder.builder().subGroup("北宇治字幕组").addAnimeTitle("葬送的芙莉莲")
+                            .addAnimeTitle("SousounoFrieren").videoResolution("1080p").episode(1.0).subVersion(2).videoSourceType("WebRip").language("简繁日内封").build())
     );
 
     record TitleTestCase(String title,AnimeTitle expectedTitle){
@@ -70,6 +74,7 @@ public class TitleParserTests {
         assertEquals(expected.videoSourceName(),actual.videoSourceName(), expected +"\n"+ actual);
         assertEquals(expected.videoSourceType(),actual.videoSourceType(), expected +"\n"+ actual);
         assertEquals(expected.episode(),actual.episode(), expected +"\n"+ actual);
+        assertEquals(expected.subVersion(),actual.subVersion(), expected +"\n"+ actual);
         assertEquals(expected.language(),actual.language(), expected +"\n"+ actual);
 
     }

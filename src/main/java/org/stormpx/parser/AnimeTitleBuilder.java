@@ -11,6 +11,8 @@ public class AnimeTitleBuilder {
     private String videoSourceName;
     private String videoSourceType;
     private Double episode;
+    //subgroup version
+    private Integer subVersion;
     private String language;
     private List<String> junk=new ArrayList<>();
 
@@ -19,7 +21,7 @@ public class AnimeTitleBuilder {
     }
 
     public AnimeTitle build(){
-        return new AnimeTitle(subGroup, animeTitles,videoResolution,videoSourceName,videoSourceType,episode,language,junk);
+        return new AnimeTitle(subGroup, animeTitles,videoResolution,videoSourceName,videoSourceType,episode,subVersion,language,junk);
     }
 
     public int animeTitleSize(){
@@ -65,6 +67,15 @@ public class AnimeTitleBuilder {
 
     public AnimeTitleBuilder episode(Double episode) {
         this.episode = episode;
+        return this;
+    }
+
+    public Integer subVersion() {
+        return subVersion;
+    }
+
+    public AnimeTitleBuilder subVersion(Integer subVersion) {
+        this.subVersion = subVersion;
         return this;
     }
 

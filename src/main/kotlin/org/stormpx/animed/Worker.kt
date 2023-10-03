@@ -61,9 +61,7 @@ open class Worker(
         }
     }
 
-    private fun buildMatcher(rules: Array<String>): Array<Matcher> {
-        return rules.map { EpisodeMatcher(it) }.toTypedArray()
-    }
+
 
     open protected fun getAnimeData(): AnimeData {
         if (!Animed.animed.isSafe(path.parent)){

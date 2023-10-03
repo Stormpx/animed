@@ -2,7 +2,6 @@ package org.stormpx.parser;
 
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -95,11 +94,15 @@ public class TitleParser {
 
     //-----------------------------------------------------------episode-----------------------------------------------------------------------
     //'ep','ep.5'
-    private final static Pattern NORMAL_EPISODE_PATTERN = Pattern.compile("\\d+(\\.\\d)?");
+    private final static Pattern NORMAL_EPISODE = Pattern.compile("\\d+(\\.\\d)?");
+    //'01v2'
+    private final static Pattern EPISODE_SUBVERSION = Pattern.compile("(?<ep>\\d+(\\.\\d)?)v(?<sver>\\d+)");
+    //'s01e2'
+    private final static Pattern SEASON_EPISODE = Pattern.compile("s(?<ss>\\d+)e(?<ep>\\d+(\\.\\d)?)");
     //ep-ep
-    private final static Pattern RANGE_EPISODE_PATTERN = Pattern.compile("\\d+-\\d+");
+    private final static Pattern RANGE_EPISODE = Pattern.compile("\\d+-\\d+");
     //'第ep话','第ep集'
-    private final static Pattern DESC_EPISODE_PATTERN = Pattern.compile("第\\d+(\\.\\d+)?[话話集]");
+    private final static Pattern DESC_EPISODE = Pattern.compile("第\\d+(\\.\\d+)?[话話集]");
 
     //----------------------------------------------------------------------------------------------------------------------------------
 
@@ -282,14 +285,14 @@ public class TitleParser {
         }
         content=content.replaceAll("ova","");
 
-        if (NORMAL_EPISODE_PATTERN.matcher(content).matches()){
+        if (NORMAL_EPISODE.matcher(content).matches()){
             try {
                 return Double.valueOf(content);
             } catch (NumberFormatException e) {
                 //ignore
             }
         }
-        if (RANGE_EPISODE_PATTERN.matcher(content).matches()){
+        if (RANGE_EPISODE.matcher(content).matches()){
             String[] split = content.split("-");
             try {
                 return Double.valueOf(split[0]);
@@ -298,9 +301,36 @@ public class TitleParser {
             }
         }
 
-        if (DESC_EPISODE_PATTERN.matcher(content).matches()){
+        if (DESC_EPISODE.matcher(content).matches()){
             return Double.valueOf(content.substring(1,content.length()-1));
         }
+
+        Matcher matcher = EPISODE_SUBVERSION.matcher(content.replaceAll(" ",""));
+        if (matcher.matches()){
+            String ep = matcher.group("ep");
+            String sver = matcher.group("sver");
+            try {
+                var episode = Double.valueOf(ep);
+                var subVersion =Integer.valueOf(sver);
+                builder.subVersion(subVersion);
+                return episode;
+            }catch (NumberFormatException e){
+
+            }
+        }
+        var season_episode = SEASON_EPISODE.matcher(content.replaceAll(" ",""));
+        if (season_episode.matches()){
+            String ep = matcher.group("ep");
+            try {
+                return Double.valueOf(ep);
+            }catch (NumberFormatException e){
+            }
+        }
+
+
+
+        if (content.contains("ep"))
+            return tryParseEpisode(content.replaceAll("ep",""));
 
         return null;
     }
@@ -564,12 +594,12 @@ public class TitleParser {
 
 //        System.out.println("10月新番".matches("(\\d+|[一四七十])月新番"));
 
-        titles.stream().skip(80+50+50+50+50).limit(50).forEach(it->{
-            System.out.println(it);
-            System.out.println(new TitleParser().parse(it));
-            System.out.println();
-        });
-//        System.out.println(new TitleParser().parse("丸子家族][海螺小姐(Sazae-san)][2694-2698][2023.04][简日_繁日内封][1080P][hevc-10bit_aac][MKV]"));
+//        titles.stream().skip(80+50+50+50+50).limit(50).forEach(it->{
+//            System.out.println(it);
+//            System.out.println(new TitleParser().parse(it));
+//            System.out.println();
+//        });
+        System.out.println(new TitleParser().parse("[北宇治字幕组] 葬送的芙莉莲 / Sousou no Frieren [01v2][WebRip][1080p][HEVC_AAC][简繁日内封]"));
 //        new TitleParser().views();
 
     }

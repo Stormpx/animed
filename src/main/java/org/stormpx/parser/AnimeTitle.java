@@ -8,6 +8,7 @@ public record AnimeTitle(String subGroup,
                          String videoSourceName,
                          String videoSourceType,
                          Double episode,
+                         Integer subVersion,
                          String language,
                          List<String> junk
 ) {
