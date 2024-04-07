@@ -42,7 +42,7 @@ open class Worker(
     data class AnimeData(var id: String, @SerialName("chapter")var episode: Double?=null,
                          val entrys:ArrayList<EntryInfo> = ArrayList())
     @kotlinx.serialization.Serializable
-    data class EntryInfo(val id:String,val title:String,val link:String,val chapter:Double)
+    data class EntryInfo(val id:String?,val title:String,val link:String,val chapter:Double)
 
 
     private val path: Path = dataPath.resolve("${id()}.json")
@@ -63,7 +63,7 @@ open class Worker(
 
 
 
-    open protected fun getAnimeData(): AnimeData {
+    protected open fun getAnimeData(): AnimeData {
         if (!Animed.animed.isSafe(path.parent)){
             throw RuntimeException("${path.parent} is not safe")
         }
@@ -81,7 +81,7 @@ open class Worker(
         }
     }
 
-    open protected fun saveAnimeData(anime:AnimeData){
+    protected open fun saveAnimeData(anime:AnimeData){
         if (!Animed.animed.isSafe(path.parent)){
             throw RuntimeException("${path.parent} is not safe")
         }
@@ -126,9 +126,57 @@ open class Worker(
 
     }
 
+    private fun tryDownloadFailureChapter(data:AnimeData) : Boolean{
+        var update=false;
+        val entrys = data.entrys
+            .filter { it.id == null }
+            .mapIndexedNotNull{idx,it->
+                logger.info("detected chapter ${it.title} is not successfully downloaded, try download again")
+                try {
+                    val downloader = context.getDownloader(animeConfig.downloader)
+                        ?: throw WorkerException("downloader [${animeConfig.downloader}] not found.")
+
+                    val id = downloader.downloadUri(it.link,animeConfig.downloadPath())
+                    logger.info("${id()}-> start download chapter ${it.chapter} ${it.title}")
+
+                    return@mapIndexedNotNull idx to EntryInfo(id,it.title,it.link,it.chapter)
+                } catch (e: Exception) {
+                    logger.error("${id()}-> an exception occurred while downloading a existing chapter ${it.title} : ${e.message}")
+                    if (e !is WorkerException){
+                        logger.error("",e)
+                    }
+                    null
+                }
+            }
+
+        entrys.forEach{
+            update=true;
+            data.entrys[it.first] = it.second
+        }
+        if (update){
+            val content =entrys.map { it.second }.joinToString { it.title }
+            context.notice(AnimedContext.AnimeMessage(animeConfig.targets?: emptyArray(),id(),"尝试重新下载${data.id}之前下载失败的剧集",content))
+        }
+
+        return update
+    }
+
     fun start() {
         try {
             val animeData = getAnimeData()
+
+            try {
+                val animeDataUpdated = tryDownloadFailureChapter(animeData)
+                if (animeDataUpdated){
+                    saveAnimeData(animeData)
+                }
+            } catch (e: Exception) {
+                logger.error("${animeData.id} try download existing chapter failed : ${e.message}")
+                if (e !is WorkerException){
+                    logger.error("",e)
+                }
+            }
+
             animeConfig.finalEpisode?.let {finalEp->
                 animeData.episode?.let { ep->
                     if (ep.compareTo(finalEp)>=0){
@@ -162,25 +210,24 @@ open class Worker(
                 logger.info("${id()} no new chapter detected")
                 return
             }
-            newChapterPairs.mapNotNull {
+            newChapterPairs.map {
                     val item = it.first
                     val result = it.second
+                    val torrentUri = tryGetTorrent(item) ?: throw WorkerException("torrent uri not found.")
                     try {
-                        val torrentUri = tryGetTorrent(item) ?: throw WorkerException("torrent uri not found.")
                         val downloader = context.getDownloader(animeConfig.downloader)
                             ?: throw WorkerException("downloader [${animeConfig.downloader}] not found.")
 
                         val id = downloader.downloadUri(torrentUri,animeConfig.downloadPath())
                         logger.info("${id()}-> start download new chapter ${result.chapter} ${item.title}")
                         context.notice(AnimedContext.AnimeMessage(animeConfig.targets?: emptyArray(),id(),item.title,item.description))
-                        return@mapNotNull it to EntryInfo(id,item.title,torrentUri,result.chapter())
+                        return@map it to EntryInfo(id,item.title,torrentUri,result.chapter())
                     } catch (e: Exception) {
                         logger.error("${id()}-> an exception occurred while downloading a new chapter ${item.title} : ${e.message}")
                         if (e !is WorkerException){
                             logger.error("",e)
                         }
-
-                        null
+                        return@map it to EntryInfo(null,item.title,torrentUri,result.chapter())
                     }
                 }
                 .stream()
