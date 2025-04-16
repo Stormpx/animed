@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory
 import org.stormpx.animed.*
 import org.stormpx.animed.download.Aria2Downloader
 import org.stormpx.animed.download.Downloader
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.*
 import java.util.concurrent.Executors
@@ -40,6 +41,7 @@ fun main(args: Array<String>) {
         DieOtaku(configPath,threadPool).start()
 
     } catch (e: Exception) {
+        e.printStackTrace()
         error(e)
     }
 
@@ -54,7 +56,7 @@ class DieOtaku (
     companion object{
         private val logger: Logger = LoggerFactory.getLogger(DieOtaku::class.java)
         private const val delay: Long = 10
-        val yaml = Yaml(EmptySerializersModule, YamlConfiguration(
+        val yaml = Yaml(EmptySerializersModule(), YamlConfiguration(
             encodeDefaults = false,
             strictMode = false
         ))
@@ -66,7 +68,7 @@ class DieOtaku (
     private var users:Array<UserConfig> = emptyArray()
 
     private fun readConfig():AppConfig{
-        return yaml.decodeFromStream(AppConfig.serializer(),Files.newInputStream(Path(configPath)))
+        return yaml.decodeFromStream(AppConfig.serializer(),Files.newInputStream(Path(configPath)),StandardCharsets.UTF_8)
     }
 
 
