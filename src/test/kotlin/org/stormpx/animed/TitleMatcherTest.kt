@@ -58,7 +58,21 @@ class TitleMatcherTest{
                     TestResult("[ANi] InSpectre S2 - 虚构推理 第二季 - 04 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]",true,4.0),
                     TestResult("[ANi] InSpectre S2 -  虚构推理 第二季 - 03 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]",true,3.0),
                 )
-            )
+            ),
+            TestCase("機動戰士Gundam GQuuuuuuX S01E02 1080p 日英雙語-多國字幕",
+                arrayOf(
+                    TestResult("機動戰士Gundam GQuuuuuuX S01E02 1080p 日英雙語-多國字幕",true,2.0),
+                    TestResult("機動戰士Gundam GQuuuuuuX S01e10 1080p 日英雙語-多國字幕",true,10.0),
+                    TestResult("機動戰士Gundam GQuuuuuuX s02e01 1080p 日英雙語-多國字幕",true,1.0),
+                )
+            ),
+
+            TestCase("[不当舔狗制作组] 机动战士高达 GQuuuuuuX - 01 [AMZN WebRip 暴力1080p HEVC-10bit E-AC-3][简繁内封字幕]",
+                arrayOf(
+                    TestResult("[不当舔狗制作组] 机动战士高达 GQuuuuuuX - 01 [AMZN WebRip 暴力1080p HEVC-10bit E-AC-3][简繁内封字幕]",true,1.0),
+                    TestResult("[不当舔狗制作组] 机动战士高达 GQuuuuuuX - 01 [AMZN WebRip 1080p HEVC-10bit E-AC-3][简繁内封字幕]",true,1.0),
+                )
+            ),
         )
 
         testcases.forEach {

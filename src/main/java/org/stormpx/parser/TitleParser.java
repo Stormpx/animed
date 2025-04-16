@@ -96,9 +96,9 @@ public class TitleParser {
     //'ep','ep.5'
     private final static Pattern NORMAL_EPISODE = Pattern.compile("\\d+(\\.\\d)?");
     //'01v2'
-    private final static Pattern EPISODE_SUBVERSION = Pattern.compile("(?<ep>\\d+(\\.\\d)?)v(?<sver>\\d+)");
+    private final static Pattern EPISODE_SUBVERSION = Pattern.compile("(?<ep>\\d+(\\.\\d)?)[vV](?<sver>\\d+)");
     //'s01e2'
-    private final static Pattern SEASON_EPISODE = Pattern.compile("s(?<ss>\\d+)e(?<ep>\\d+(\\.\\d)?)");
+    private final static Pattern SEASON_EPISODE = Pattern.compile("[sS](?<ss>\\d+)[eE](?<ep>\\d+(\\.\\d)?)");
     //ep-ep
     private final static Pattern RANGE_EPISODE = Pattern.compile("\\d+-\\d+");
     //'第ep话','第ep集'
@@ -124,8 +124,8 @@ public class TitleParser {
 
         return title.replaceAll("【","[")
                 .replaceAll("】","]")
-                .replaceAll("（","[")
-                .replaceAll("）","]")
+                .replaceAll("（","(")
+                .replaceAll("）",")")
                 .replaceAll("\\(","[")
                 .replaceAll("\\)","]")
                 .replaceAll("★","")
@@ -189,8 +189,27 @@ public class TitleParser {
                     }
                     sb.appendCodePoint(nextCodepoint);
                 }
-                discardBuffer(tokens,sb,Token.Bracket::new);
+                discardBuffer(tokens,sb,Token.Square::new);
 
+                continue;
+            }
+            if (codepoint=='('){
+                discardBuffer(tokens,sb,Token.Str::new);
+                int lv = 0;
+                //read until ')'
+                for(idx=idx+1;idx<length;idx++){
+                    int nextCodepoint =title.codePointAt(idx);
+                    if (nextCodepoint=='('){
+                        lv++;
+                    }
+                    if (nextCodepoint==')'){
+                        if (lv==0)
+                            break;
+                        lv-=1;
+                    }
+                    sb.appendCodePoint(nextCodepoint);
+                }
+                discardBuffer(tokens,sb,Token.Garden::new);
                 continue;
             }
             if (codepoint==' '){
@@ -219,19 +238,49 @@ public class TitleParser {
         }
         while (tokens.hasNext()){
             var next = tokens.nextToken();
+            String content = next.getContent();
             if (next instanceof Token.Bracket){
-                break;
+                //如果是方括号才退出
+                if (next instanceof Token.Square) {
+                    break;
+                }else{
+                    content = ((Token.Bracket) next).getContentWithBracket();
+                }
             }
             if (next instanceof Token.Delimiter){
                 break;
             }
-            String content = next.getContent();
+
             sb.append(content);
         }
 
         return sb.toString();
     }
 
+    private String extractResolution(String content){
+        Matcher xxpMatcher = RESOLUTION_PATTERN.matcher(content);
+        if(xxpMatcher.matches()){
+            return content.toLowerCase();
+        }
+        if (xxpMatcher.find()){
+            return xxpMatcher.group().toLowerCase();
+        }
+
+        Matcher hwMatcher = FULLSIZE_PATTERN.matcher(content);
+        if (hwMatcher.matches()){
+            return content.toLowerCase();
+        }
+        if (hwMatcher.find()){
+            return hwMatcher.group().toLowerCase();
+        }
+        content = content.toLowerCase();
+        if (content.contains("4k")){
+            return "4k";
+        }else if (content.contains("2k")){
+            return "2k";
+        }
+        return null;
+    }
 
     private boolean isResolution(String content){
         Matcher xxpMatcher = RESOLUTION_PATTERN.matcher(content);
@@ -245,7 +294,6 @@ public class TitleParser {
         if ("4k".equalsIgnoreCase(content)|| "2k".equalsIgnoreCase(content)){
             return true;
         }
-
         return false;
     }
 
@@ -305,10 +353,10 @@ public class TitleParser {
             return Double.valueOf(content.substring(1,content.length()-1));
         }
 
-        Matcher matcher = EPISODE_SUBVERSION.matcher(content.replaceAll(" ",""));
-        if (matcher.matches()){
-            String ep = matcher.group("ep");
-            String sver = matcher.group("sver");
+        Matcher episodeSubVersionMatcher = EPISODE_SUBVERSION.matcher(content.replaceAll(" ",""));
+        if (episodeSubVersionMatcher.matches()){
+            String ep = episodeSubVersionMatcher.group("ep");
+            String sver = episodeSubVersionMatcher.group("sver");
             try {
                 var episode = Double.valueOf(ep);
                 var subVersion =Integer.valueOf(sver);
@@ -318,21 +366,44 @@ public class TitleParser {
 
             }
         }
-        var season_episode = SEASON_EPISODE.matcher(content.replaceAll(" ",""));
-        if (season_episode.matches()){
-            String ep = matcher.group("ep");
+        var seasonEpisodeMatcher = SEASON_EPISODE.matcher(content.replaceAll(" ",""));
+        if (seasonEpisodeMatcher.matches()){
+            String ep = seasonEpisodeMatcher.group("ep");
             try {
                 return Double.valueOf(ep);
             }catch (NumberFormatException e){
             }
         }
 
-
-
         if (content.contains("ep"))
             return tryParseEpisode(content.replaceAll("ep",""));
 
+        try {
+            var ep = Double.valueOf(content);
+            if (ep<0){
+                return Math.abs(ep);
+            }
+        }catch (NumberFormatException e){
+        }
+
         return null;
+    }
+
+    private boolean isResolutionToken(Token token){
+        String content = token.getContent();
+        if (isResolution(content)){
+            builder.videoResolution(extractResolution(content));
+            return true;
+        }else{
+            if (!(token instanceof Token.Bracket)){
+                String resolution = extractResolution(content);
+                if (resolution!=null) {
+                    builder.videoResolution(resolution);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private List<Token> collectMetaInfo(List<Token> tokens,boolean parseEpisode){
@@ -340,8 +411,7 @@ public class TitleParser {
         while (iterator.hasNext()){
             Token token = iterator.next();
             String content = token.getContent();
-            if (isResolution(content)){
-                builder.videoResolution(content);
+            if (isResolutionToken(token)){
                 iterator.remove();
             }else if (isVideoSourceName(content)){
                 builder.videoSourceName(content);
@@ -363,7 +433,6 @@ public class TitleParser {
                         remainTokens.forEach(iterator::add);
                     }
                 }
-
             }
         }
         if (parseEpisode){
@@ -382,7 +451,7 @@ public class TitleParser {
             //如果找到集数，则将集数后面的内容视为元信息
             while (findEpisode&& iterator.hasNext()){
                 Token token = iterator.next();
-                if (token instanceof Token.Bracket ){
+                if (token instanceof Token.Bracket){
                     for (Token subToken : collectMetaInfo(splitToken(preProcessMetaInfo(token.getContent())), false)) {
                         builder.addJunk(subToken.getContent());
                     }
@@ -417,13 +486,13 @@ public class TitleParser {
                         //怀疑前一个token不是字幕组,尝试检查当前token
                         if (cautiousState==0){
                             cautiousState=1;
-                            if (isSubGroup(bracket.content())){
-                                builder.subGroup(bracket.content());
+                            if (isSubGroup(bracket.getContent())){
+                                builder.subGroup(bracket.getContent());
                                 continue;
                             }
                         }
                         //将中括号拆成一个个token
-                        List<Token> subTokens = splitToken(bracket.content());
+                        List<Token> subTokens = splitToken(bracket.getContent());
                         TokenReader subReader = new TokenReader(subTokens);
 
                         while (subReader.hasNext()){
@@ -490,7 +559,7 @@ public class TitleParser {
                         continue;
                     }
                     if (token instanceof Token.Bracket bracket){
-                        List<Token> subTokens = splitToken(preProcess(bracket.content()));
+                        List<Token> subTokens = splitToken(preProcess(bracket.getContent()));
                         List<Token> filteredTokens = collectMetaInfo(new ArrayList<>(subTokens), false);
                         boolean includeMetaInfo=subTokens.size() != filteredTokens.size();
                         //token太多并且过滤前后的数量一样，则认为是动画名称
@@ -546,7 +615,7 @@ public class TitleParser {
                 }
                 default -> {
                     if (token instanceof Token.Bracket bracket){
-                        var subTokens = new TokenReader(collectMetaInfo(splitToken(preProcessMetaInfo(bracket.content())),false));
+                        var subTokens = new TokenReader(collectMetaInfo(splitToken(preProcessMetaInfo(bracket.getContent())),false));
                         tokens.pushReader(subTokens);
                     }else{
                         //workaround
@@ -599,7 +668,10 @@ public class TitleParser {
 //            System.out.println(new TitleParser().parse(it));
 //            System.out.println();
 //        });
-        System.out.println(new TitleParser().parse("[北宇治字幕组] 葬送的芙莉莲 / Sousou no Frieren [01v2][WebRip][1080p][HEVC_AAC][简繁日内封]"));
+
+
+        System.out.println(new TitleParser().parse("機動戰士Gundam GQuuuuuuX S01E02 1080p 日英雙語-多國字幕"));
+//        System.out.println(new TitleParser().parse("[不当舔狗制作组] 机动战士高达 GQuuuuuuX - 01V2 [AMZN WebRip 1080p HEVC-10bit E-AC-3][简繁内封字幕]"));
 //        new TitleParser().views();
 
     }

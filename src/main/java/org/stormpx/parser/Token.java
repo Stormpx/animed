@@ -4,10 +4,32 @@ public sealed interface Token {
 
     String getContent();
 
-    record Bracket(String content) implements Token{
+    sealed interface Bracket extends Token{
+
+        String getContentWithBracket();
+
+    }
+
+    record Square(String content) implements Bracket{
         @Override
         public String getContent() {
             return content;
+        }
+
+        @Override
+        public String getContentWithBracket() {
+            return "["+getContent()+"]";
+        }
+    }
+
+    record Garden(String content) implements Bracket{
+        @Override
+        public String getContent() {
+            return content;
+        }
+        @Override
+        public String getContentWithBracket() {
+            return "("+getContent()+")";
         }
     }
 
