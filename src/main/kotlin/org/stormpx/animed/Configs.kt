@@ -16,7 +16,7 @@ data class AppConfig(
     val downloader: Array<DownloaderConfig>,
     val email:EmailConfig? = null,
     val users: Array<UserConfig>? = null,
-    val proxies: Array<String>?=null
+    val proxies: Array<String>?=null,
     ){
 
     fun path(): Path {
@@ -135,7 +135,9 @@ data class AnimeConfig(
 data class DownloaderConfig(
     val id:String,
     val uri:String,
-    val token:String?=null
+    val token:String?=null,
+    @SerialName("download_path")
+    val downloadPath: String?=null
 )
 @Serializable
 data class EmailConfig(

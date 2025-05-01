@@ -8,5 +8,6 @@ interface Downloader {
 
     fun downloadTorrent(inputStream: InputStream,downloadPath:String): String
 
+    fun downloadPath():String
 
 }
