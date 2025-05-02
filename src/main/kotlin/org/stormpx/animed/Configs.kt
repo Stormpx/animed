@@ -17,6 +17,7 @@ data class AppConfig(
     val email:EmailConfig? = null,
     val users: Array<UserConfig>? = null,
     val proxies: Array<String>?=null,
+    val mcp: McpConfig?=null,
     ){
 
     fun path(): Path {
@@ -151,4 +152,11 @@ data class EmailConfig(
 data class UserConfig(
     val name:String,
     val email:String
+)
+
+@Serializable
+data class McpConfig(
+    val enable: Boolean?=false,
+    val host: String?=null,
+    val port: Int?=null,
 )

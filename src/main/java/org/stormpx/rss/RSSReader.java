@@ -90,7 +90,7 @@ public class RSSReader {
             case "title"-> item.setTitle(xmlReader.getElementText());
             case "link"-> item.setLink(xmlReader.getElementText());
             case "description" -> item.setDescription(xmlReader.getElementText());
-            case "pubDate"-> channel.setPubDate(parseDate(xmlReader.getElementText()));
+            case "pubDate"-> item.setPubDate(parseDate(xmlReader.getElementText()));
             case "author" -> item.setAuthor(xmlReader.getElementText());
             case "category" ->item.setCategory(xmlReader.getElementText());
             case "enclosure" -> {

@@ -31,7 +31,7 @@ anime:
       - '[喵萌奶茶屋&LoliHouse] 机动战士高达 水星的魔女 / Mobile Suit Gundam THE WITCH FROM MERCURY - #ep# [WebRip 1080p HEVC-10bit AAC][简繁日内封字幕]'
     #下载器id
     downloader: aria2
-    #传递到下载器的下载地址
+    #传递到下载器的下载地址 可配置相对路径
     download_path: /downloads/VIDEO/anima/水星的魔女/Season 2
 
 #下载器配置
@@ -42,6 +42,14 @@ downloader:
     type: aria2
     uri: http://127.0.0.1:6800/jsonrpc
     token: foobar
+    #下载器的下载目录 如果anime的下载路径时配置了相对路径则将根据该目录进行'相对'
+    download_path: /downloads/anime
+
+#mcp服务配置
+mcp:
+  enable: true
+  host: 127.0.0.1
+  port: 3001
 
 #使用代理读取RSS源 只支持HTTP
 proxies:

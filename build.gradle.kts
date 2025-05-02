@@ -1,8 +1,9 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.8.21"
-    kotlin("plugin.serialization") version "1.8.10"
+    kotlin("plugin.serialization") version "2.1.20"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     application
 }
@@ -23,6 +24,7 @@ dependencies {
     implementation("com.charleskorn.kaml:kaml:0.53.0")
     implementation("ch.qos.logback:logback-core:1.5.13")
     implementation("ch.qos.logback:logback-classic:1.5.13")
+    implementation("io.modelcontextprotocol:kotlin-sdk:0.5.0")
     testImplementation(kotlin("test"))
 }
 
@@ -31,7 +33,9 @@ tasks.test {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
+    compilerOptions{
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }
 
 

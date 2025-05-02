@@ -1,5 +1,6 @@
 import ch.qos.logback.classic.Level
 import com.charleskorn.kaml.MissingRequiredPropertyException
+import com.charleskorn.kaml.SingleLineStringStyle
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import jakarta.mail.Message
@@ -15,11 +16,15 @@ import org.stormpx.animed.*
 import org.stormpx.animed.download.Aria2Downloader
 import org.stormpx.animed.download.Downloader
 import java.nio.charset.StandardCharsets
+import java.nio.file.AccessDeniedException
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 
@@ -29,9 +34,9 @@ fun main(args: Array<String>) {
     if (args.isEmpty()){
         error("no config specified")
     }
-    System.setProperty("jdk.httpclient.keepalive.timeout","0");
+    System.setProperty("jdk.httpclient.keepalive.timeout","0")
     val configPath:String= args[0]
-    var id = 1;
+    var id = 1
     val threadPool = Executors.newScheduledThreadPool(1) {
         val t= Thread(it)
         t.name="Otaku-Thread-${id++}"
@@ -49,31 +54,24 @@ fun main(args: Array<String>) {
 }
 
 class DieOtaku (
-    val configPath:String,
-    val threadPool: ScheduledExecutorService,
+    configPath:String,
+    private val threadPool: ScheduledExecutorService,
     ) : AnimedContext{
 
     companion object{
         private val logger: Logger = LoggerFactory.getLogger(DieOtaku::class.java)
         private const val delay: Long = 10
-        val yaml = Yaml(EmptySerializersModule(), YamlConfiguration(
-            encodeDefaults = false,
-            strictMode = false
-        ))
     }
-    private var latestConfig:AppConfig?=null;
+    val animeRss:AnimeRss = AnimeRss()
+    val config:Config = Config(Path(configPath))
     private val workers = ArrayList<Worker>()
     private val downloader = HashMap<String,Downloader>()
     private var mailer:Mailer? = null
     private var users:Array<UserConfig> = emptyArray()
-
-    private fun readConfig():AppConfig{
-        return yaml.decodeFromStream(AppConfig.serializer(),Files.newInputStream(Path(configPath)),StandardCharsets.UTF_8)
-    }
-
+    private var mcpServer:McpServer= McpServer(this)
 
     private fun assembleWorker(appConfig: AppConfig){
-        val animeConfigs = appConfig.anime;
+        val animeConfigs = appConfig.anime
 
         animeConfigs.distinctBy { it.id }
             .filter { workers.isEmpty()||workers.any { worker ->  worker.isOptionChange(it) }||workers.all { worker -> !worker.isSameId(it.id) } }
@@ -82,7 +80,7 @@ class DieOtaku (
                     val worker= Worker(appConfig.path(),it, this)
                     val oldWorkers = workers.filter { existsWorker -> existsWorker.isOptionChange(it) }
                     if (oldWorkers.isNotEmpty()){
-                        logger.info("worker [${worker.id()}] config change. try restart..");
+                        logger.info("worker [${worker.id()}] config changed. try restart..")
                     }
                     oldWorkers.forEach{ it.cancel() }
                     workers.removeAll(oldWorkers.toSet())
@@ -91,7 +89,7 @@ class DieOtaku (
                     workers.add(worker)
                     worker
                 }catch (e:Exception){
-                    logger.error(e.message);
+                    logger.error(e.message)
                     return
                 }
                 logger.info("worker [${worker.id()}] started..")
@@ -122,7 +120,6 @@ class DieOtaku (
                 .buildMailer()
         }
 
-
     }
 
     private fun setLogLevel(level:Level){
@@ -134,19 +131,35 @@ class DieOtaku (
             Files.createDirectories(config.path())
         }
         Animed.animed.markDir(config.path())
-        latestConfig=config
         setLogLevel(if(config.debug){Level.DEBUG}else{Level.INFO})
         users = config.users?: emptyArray()
         config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
+
+        val latestMcp = this.config.latestConfig?.mcp
+        val mcp = config.mcp
+        if (latestMcp!=mcp){
+            if (mcp==null){
+                if (mcpServer.isOpen())
+                    mcpServer.stop()
+            }else{
+                if (mcpServer.isOpen()){
+                    if (mcp!=mcpServer.stateAsConfig()){
+                        mcpServer.stop()
+                    }
+                }
+                if (!mcpServer.isOpen()&&mcp.enable==true){
+                    mcpServer.start(host = mcp.host?:"127.0.0.1", port = mcp.port?:3001)
+                }
+            }
+        }
+
+        this.config.latestConfig=config
     }
 
     fun start(){
-        val config = readConfig()
+        val config = config.readConfig()
 
         handleNewConfig(config)
-
-//        users = config.users?: emptyArray()
-//        config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
 
         config.downloader.forEach {
             downloader[it.id]=newDownloader(it)
@@ -156,11 +169,10 @@ class DieOtaku (
 
         threadPool.scheduleWithFixedDelay({
             try {
-                val appConfig = readConfig()
+                val appConfig = this.config.readConfig()
                 handleNewConfig(appConfig)
-//                users = appConfig.users?: emptyArray()
-//                config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
                 assembleWorker(appConfig)
+
             } catch (e: MissingRequiredPropertyException) {
                 logger.error("unable read config because: at line ${e.location.line} column ${e.location.column} ${e.message}")
             }catch (e: Exception){
@@ -168,9 +180,10 @@ class DieOtaku (
             }
         }, delay, delay,TimeUnit.SECONDS)
 
-        logger.info("animed started.")
+        logger.info("Animed started.")
 
         assembleWorker(config)
+
     }
 
     override fun getDownloader(id: String): Downloader? {
@@ -193,7 +206,7 @@ class DieOtaku (
             .map { Recipient(it.name,it.email, Message.RecipientType.TO) }
 
         if (recipients.isEmpty()) {
-            val appConfig= latestConfig
+            val appConfig= this.config.latestConfig
             val target= appConfig?.defaultTarget?:return
             recipients= listOf((users.findLast { Objects.equals(it.name,target) }?.run { Recipient(name, email, Message.RecipientType.TO) }?:return))
         }
