@@ -5,6 +5,7 @@ plugins {
     kotlin("jvm") version "1.8.21"
     kotlin("plugin.serialization") version "2.1.20"
     id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("org.graalvm.buildtools.native") version "0.10.6"
     application
 }
 
@@ -34,11 +35,45 @@ tasks.test {
 
 tasks.withType<KotlinCompile> {
     compilerOptions{
-        jvmTarget.set(JvmTarget.JVM_17)
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 
+graalvmNative {
+    toolchainDetection.set(true)
+    binaries {
+        named("main") {
+            resources.autodetect()
+            mainClass.set("MainKt")
+            debug.set(false)
+            useFatJar.set(true)
+            fallback.set(false)
+            verbose.set(true)
+            quickBuild.set(true)
+            javaLauncher.set(javaToolchains.launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(21))
+                vendor.set(JvmVendorSpec.matching("Oracle Corporation"))
+            })
 
+            buildArgs.add("--initialize-at-build-time=org.slf4j.loggerFactory,ch.qos.logback,io.ktor.network,kotlin,kotlinx")
+            buildArgs.add("--initialize-at-build-time=org.slf4j.helpers.Reporter")
+            buildArgs.add("--initialize-at-run-time=kotlin.uuid,io.modelcontextprotocol")
+            buildArgs.add("-H:+InstallExitHandlers")
+            buildArgs.add("-H:+ReportUnsupportedElementsAtRuntime")
+            buildArgs.add("-H:+ReportExceptionStackTraces")
+            buildArgs.add("-H:+StaticExecutableWithDynamicLibC")
+            buildArgs.add("--trace-class-initialization=org.slf4j.LoggerFactory,org.slf4j.MarkerFactory")
+
+            imageName.set("animed")
+
+        }
+    }
+    agent {
+        defaultMode.set("standard")
+        enabled.set(true)
+
+    }
+}
 
 
 application {
