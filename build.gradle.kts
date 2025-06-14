@@ -75,7 +75,7 @@ graalvmNative {
     }
     agent {
         defaultMode.set("standard")
-        enabled.set(true)
+        enabled.set(false)
 
     }
 }
