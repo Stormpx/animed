@@ -1,0 +1,30 @@
+name: main
+on:
+  workflow_dispatch:
+
+jobs:
+  native-image:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04,ubuntu-22.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: make gradlew executable
+        run: chmod +x ./gradlew
+      - name: Setup jdk
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'graalvm'
+          components: 'native-image'
+      - name: Setup Gradle
+        uses: gradle/actions@v4.4.1
+      - name: Build Native Image
+        run: ./gradlew NativeCompile
+      - name: Upload executable
+        with: 
+          name: animed
+          path: build/native/nativeCompile/animed
+      
+    
