@@ -1,11 +1,32 @@
-FROM debian:buster-slim
-MAINTAINER stormpx
+FROM container-registry.oracle.com/graalvm/native-image:21 as builder
+
+COPY . /animed
+WORKDIR /animed
+
+ARG VERSION=0.0.1
+ARG OS_ARCH
+
+ARG UPX_VERSION=5.0.0
+ARG UPX_ARCHIVE=upx-${UPX_VERSION}-${OS_ARCH}_linux.tar.xz
+RUN microdnf -y install wget xz && \
+    wget -q https://github.com/upx/upx/releases/download/v${UPX_VERSION}/${UPX_ARCHIVE} && \
+    tar -xJf ${UPX_ARCHIVE} && \
+    rm -rf ${UPX_ARCHIVE} && \
+    mv upx-${UPX_VERSION}-${OS_ARCH}_linux/upx . && \
+    rm -rf upx-${UPX_VERSION}-amd64_linux
+
+RUN microdnf install findutils
+
+RUN ./gradlew NativeCompile
+
+ENV ARTIFACT=build/native/nativeCompile/animed-$VERSION
+
+RUN ./upx -9 $ARTIFACT
 
 
-RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-RUN echo 'Asia/Shanghai' >/etc/timezone
+FROM debian:bookworm-slim
 
+COPY --from=builder "$ARTIFACT" "/animed"
 
-COPY "build/native/nativeCompile/animed" "/animed"
 
 ENTRYPOINT [ "/animed" ]
