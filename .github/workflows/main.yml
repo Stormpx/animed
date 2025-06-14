@@ -29,6 +29,14 @@ jobs:
       - name: Build Native Image
         run: ./gradlew NativeCompile
         
+      - name: UPX Compress
+        uses: crazy-max/ghaction-upx@v3.2.0
+        with:
+          version: latest
+          files: |
+            build/native/nativeCompile/animed
+          args: -9
+        
       - name: Upload executable
         uses: actions/upload-artifact@v4.6.2
         with: 
