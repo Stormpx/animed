@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "org.stormpx"
-version = "1.0-SNAPSHOT"
+version = "0.0.1"
 
 repositories {
     mavenLocal()
@@ -44,6 +44,16 @@ tasks.withType<KotlinCompile> {
     }
 }
 
+fun getAppName(): String{
+    return project.name+"-"+project.version;
+}
+
+tasks.register("getAppName") {
+    doLast {
+        println(getAppName())
+    }
+}
+
 graalvmNative {
     toolchainDetection.set(true)
     binaries {
@@ -69,7 +79,7 @@ graalvmNative {
             buildArgs.add("-H:+StaticExecutableWithDynamicLibC")
             buildArgs.add("--trace-class-initialization=org.slf4j.LoggerFactory,org.slf4j.MarkerFactory")
 
-            imageName.set("animed")
+            imageName.set(getAppName())
 
         }
     }

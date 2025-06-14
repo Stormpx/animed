@@ -1,0 +1,6 @@
+FROM debian:bookworm-slim
+MAINTAINER stormpx
+
+COPY "animed" "/animed"
+
+ENTRYPOINT [ "/animed" ]

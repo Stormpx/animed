@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17.0.3_7-jre
+FROM debian:buster-slim
 MAINTAINER stormpx
 
 
@@ -6,6 +6,6 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN echo 'Asia/Shanghai' >/etc/timezone
 
 
-COPY "animed.jar" "/app.jar"
+COPY "build/native/nativeCompile/animed" "/animed"
 
-ENTRYPOINT [ "java" , "-jar",  "/app.jar" ]
+ENTRYPOINT [ "/animed" ]
