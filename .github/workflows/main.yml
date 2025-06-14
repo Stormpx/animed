@@ -23,6 +23,7 @@ jobs:
       - name: Build Native Image
         run: ./gradlew NativeCompile
       - name: Upload executable
+        uses: actions/upload-artifact@v4.6.2
         with: 
           name: animed
           path: build/native/nativeCompile/animed
