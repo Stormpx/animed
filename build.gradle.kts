@@ -32,6 +32,11 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
 
 tasks.withType<KotlinCompile> {
     compilerOptions{
