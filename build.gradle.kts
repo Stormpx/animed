@@ -48,6 +48,12 @@ fun getAppName(): String{
     return project.name+"-"+project.version;
 }
 
+tasks.register("getVersion") {
+    doLast {
+        println(project.version)
+    }
+}
+
 tasks.register("getAppName") {
     doLast {
         println(getAppName())
