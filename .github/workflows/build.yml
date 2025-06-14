@@ -26,6 +26,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          build-args: OS_ARCH=amd64,
+          build-args: OS_ARCH=${{env.ARCH}},VERSION=${{ env.VERSION }}
           push: true
           tags: stormpx/animed-${{ env.VERSION }}:latest

@@ -13,7 +13,7 @@ RUN microdnf -y install wget xz && \
     tar -xJf ${UPX_ARCHIVE} && \
     rm -rf ${UPX_ARCHIVE} && \
     mv upx-${UPX_VERSION}-${OS_ARCH}_linux/upx . && \
-    rm -rf upx-${UPX_VERSION}-amd64_linux
+    rm -rf upx-${UPX_VERSION}-${OS_ARCH}_linux
 
 RUN microdnf install findutils
 
