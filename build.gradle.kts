@@ -84,6 +84,8 @@ graalvmNative {
             buildArgs.add("-H:+ReportExceptionStackTraces")
             buildArgs.add("-H:+StaticExecutableWithDynamicLibC")
             buildArgs.add("--trace-class-initialization=org.slf4j.LoggerFactory,org.slf4j.MarkerFactory")
+            jvmArgs.add("-Dsun.jnu.encoding=UTF-8")
+            jvmArgs.add("-Dfile.encoding=UTF-8")
 
             imageName.set(getAppName())
 

@@ -1,4 +1,4 @@
-FROM container-registry.oracle.com/graalvm/native-image:21 as builder
+FROM container-registry.oracle.com/graalvm/native-image:21 AS builder
 
 COPY . /animed
 WORKDIR /animed
@@ -16,6 +16,7 @@ RUN microdnf -y install wget xz && \
     rm -rf upx-${UPX_VERSION}-${OS_ARCH}_linux
 
 RUN microdnf install findutils
+RUN microdnf --nobest install glibc-all-langpacks
 RUN chmod +x ./gradlew
 RUN ./gradlew NativeCompile
 
@@ -26,6 +27,15 @@ RUN ./upx -9 $ARTIFACT
 RUN mv "$ARTIFACT" "/artifact"
 
 FROM debian:bookworm-slim
+
+#RUN apt update
+# Set the locale
+#RUN apt install -y locales
+#RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+#    locale-gen
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 COPY --from=builder "/artifact" "/animed"
 
