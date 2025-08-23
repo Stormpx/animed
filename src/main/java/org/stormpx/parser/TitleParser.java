@@ -310,7 +310,15 @@ public class TitleParser {
         return VIDEO_SOURCE_TYPE.stream().anyMatch(it->it.equalsIgnoreCase(content));
     }
 
-    private boolean isJunk(String content){
+    private static final List<String> JUNK_KW = List.of("国漫","國漫");
+
+    private boolean isJunk(Token token){
+        var content = token.getContent();
+        if (token instanceof Token.Bracket){
+            if (JUNK_KW.stream().anyMatch(it->Objects.equals(content,it))){
+                return true;
+            }
+        }
         return isReleaseSeason(content)
                 ||END_KW.stream().anyMatch(it->it.equalsIgnoreCase(content))
                 ||VIDEO_TERM.stream().anyMatch(it->it.equalsIgnoreCase(content))
@@ -419,7 +427,7 @@ public class TitleParser {
             }else if (isVideoSourceType(content)){
                 builder.videoSourceType(content);
                 iterator.remove();
-            }else if (isJunk(content)){
+            }else if (isJunk(token)){
                 builder.addJunk(content);
                 iterator.remove();
             }else if (isLangPart(content)){
@@ -669,8 +677,7 @@ public class TitleParser {
 //            System.out.println();
 //        });
 
-
-        System.out.println(new TitleParser().parse("機動戰士Gundam GQuuuuuuX S01E02 1080p 日英雙語-多國字幕"));
+        System.out.println(new TitleParser().parse("[GM-Team][国漫][沧元图][The Demon Hunter][26 END][2023][GB][4K HEVC 10Bit]"));
 //        System.out.println(new TitleParser().parse("[不当舔狗制作组] 机动战士高达 GQuuuuuuX - 01V2 [AMZN WebRip 1080p HEVC-10bit E-AC-3][简繁内封字幕]"));
 //        new TitleParser().views();
 

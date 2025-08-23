@@ -8,7 +8,7 @@ import java.util.Objects
 
 class TitleMatcher(baseTitle:String) : Matcher {
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(TitleMatcher.javaClass)
+        private val logger: Logger = LoggerFactory.getLogger(TitleMatcher::class.java)
     }
     private val parser:TitleParser = TitleParser()
     private val expectedTitle:AnimeTitle= parser.parse(baseTitle)
