@@ -1,21 +1,36 @@
 package org.stormpx.animed
 
 import DieOtaku
-import io.ktor.server.cio.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.*
-import io.modelcontextprotocol.kotlin.sdk.*
+import io.ktor.server.response.respond
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import io.ktor.server.sse.SSE
+import io.ktor.server.sse.sse
+import io.ktor.util.collections.ConcurrentMap
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.server.ServerSession
+import io.modelcontextprotocol.kotlin.sdk.server.SseServerTransport
 import io.modelcontextprotocol.kotlin.sdk.server.mcp
-import kotlinx.serialization.SerialName
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ReadResourceResult
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextResourceContents
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.file.Files
 import java.time.format.DateTimeFormatter
-import kotlin.io.path.Path
 
 class McpServer(private val otaku: DieOtaku) {
     companion object{
@@ -121,7 +136,7 @@ class McpServer(private val otaku: DieOtaku) {
                  
                  工具返回的配置直接原样展示即可，不能擅自整理、省略、归纳、总结、分类。
             """.trimIndent(),
-            inputSchema = Tool.Input()
+            inputSchema = ToolSchema()
         ) { request ->
             CallToolResult(
                 content = listOf(TextContent(otaku.config.readPlain()))
@@ -166,7 +181,7 @@ class McpServer(private val otaku: DieOtaku) {
                 |b|[ANi] 小市民系列 第二季 - 14 [1080P][Baha][WEB-DL][AAC AVC][CHT][MP4]| 2025-01-01 00:00:01|
                 |c|[北宇治字幕组] 小市民系列 / Shoushimin Series [13][WebRip][HEVC_AAC][简日内嵌]| 2025-01-01 00:00:01|
             """.trimIndent(),
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     putJsonObject("source") {
                         put("type", "string")
@@ -178,8 +193,8 @@ class McpServer(private val otaku: DieOtaku) {
                 required = listOf("source","keyword")
             ),
         ) { request ->
-            val source = request.arguments["source"]!!.jsonPrimitive.content
-            val keyword = request.arguments["keyword"]!!.jsonPrimitive.content
+            val source = request.arguments?.get("source")!!.jsonPrimitive.content
+            val keyword = request.arguments!!["keyword"]!!.jsonPrimitive.content
             val website = AnimeRss.Website.entries.find { it.name.equals(source,true) }
             if (website == null) {
                 return@addTool CallToolResult(content = listOf(TextContent("Source '$source' Unavailable")), isError = true)
@@ -220,7 +235,7 @@ class McpServer(private val otaku: DieOtaku) {
                 如果调用失败则在告知用户错误原因后终止对话，不能再次尝试。
                 本工具有副作用，你必须在用户明确要求添加一个新的监听程序才可调用本工具，在调用前必须仔细检查参数是否符合上述规范/定义，如果任何参数不确认你可以中止调用本工具并要求用户提供更具体的描述。
             """.trimIndent(),
-            inputSchema = Tool.Input(
+            inputSchema = ToolSchema(
                 properties = buildJsonObject {
                     putJsonObject("id") {
                         put("type", "string")
@@ -256,15 +271,21 @@ class McpServer(private val otaku: DieOtaku) {
                 required = listOf("id","rss","titles","downloader","downloadPath")
             ),
         ){ request->
-            val id = request.arguments["id"]!!.jsonPrimitive.content
-            val rss = request.arguments["rss"]!!.jsonPrimitive.content
-            val immediately = request.arguments["immediately"]?.jsonPrimitive?.boolean
-            val startEpisode = request.arguments["startEpisode"]?.jsonPrimitive?.doubleOrNull
-            val finalEpisode = request.arguments["finalEpisode"]?.jsonPrimitive?.doubleOrNull
-            val refreshInterval = request.arguments["refreshInterval"]?.jsonPrimitive?.longOrNull
-            val titles = request.arguments["titles"]!!.jsonArray.map { it.jsonPrimitive.content }.toTypedArray()
-            val downloader = request.arguments["downloader"]!!.jsonPrimitive.content
-            val downloadPath = request.arguments["downloadPath"]!!.jsonPrimitive.content
+            val args = request.arguments
+            if (args==null){
+                io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+                return@addTool CallToolResult(content = listOf(TextContent("Argument is empty")), isError = true)
+            }
+
+            val id = args["id"]!!.jsonPrimitive.content
+            val rss = args["rss"]!!.jsonPrimitive.content
+            val immediately = args["immediately"]?.jsonPrimitive?.boolean
+            val startEpisode = args["startEpisode"]?.jsonPrimitive?.doubleOrNull
+            val finalEpisode = args["finalEpisode"]?.jsonPrimitive?.doubleOrNull
+            val refreshInterval = args["refreshInterval"]?.jsonPrimitive?.longOrNull
+            val titles = args["titles"]!!.jsonArray.map { it.jsonPrimitive.content }.toTypedArray()
+            val downloader = args["downloader"]!!.jsonPrimitive.content
+            val downloadPath = args["downloadPath"]!!.jsonPrimitive.content
 
 
             if (titles.isEmpty()){
@@ -295,7 +316,7 @@ class McpServer(private val otaku: DieOtaku) {
                 )
             } catch (e: Exception) {
                 CallToolResult(
-                    content = listOf(TextContent(e.message)),
+                    content = listOf(TextContent(e.message.orEmpty())),
                     isError = true
                 )
             }
@@ -315,9 +336,37 @@ class McpServer(private val otaku: DieOtaku) {
     }
 
     fun start(host:String,port:Int){
+        val serverSessions = ConcurrentMap<String, ServerSession>()
+        val mcpServer = configureServer()
         server = embeddedServer(CIO, host = host, port = port){
-            mcp {
-                return@mcp configureServer()
+            install(SSE)
+            routing {
+                sse("/sse") {
+                    val transport = SseServerTransport("/message", this)
+                    val serverSession = mcpServer.createSession(transport)
+                    serverSessions[transport.sessionId] = serverSession
+
+                    serverSession.onClose {
+                        println("Server session closed for: ${transport.sessionId}")
+                        serverSessions.remove(transport.sessionId)
+                    }
+                    awaitCancellation()
+                }
+                post("/message") {
+                    val sessionId: String? = call.request.queryParameters["sessionId"]
+                    if (sessionId == null) {
+                        call.respond(HttpStatusCode.BadRequest, "Missing sessionId parameter")
+                        return@post
+                    }
+
+                    val transport = serverSessions[sessionId]?.transport as? SseServerTransport
+                    if (transport == null) {
+                        call.respond(HttpStatusCode.NotFound, "Session not found")
+                        return@post
+                    }
+
+                    transport.handlePostMessage(call)
+                }
             }
         }
         this.host = host

@@ -21,6 +21,9 @@
     "name":"[Lsun.security.pkcs.SignerInfo;"
   },
   {
+    "name":"android.os.Build$VERSION"
+  },
+  {
     "name":"ch.qos.logback.classic.encoder.PatternLayoutEncoder",
     "queryAllPublicMethods":true,
     "methods":[{"name":"<init>","parameterTypes":[] }]
@@ -144,15 +147,19 @@
   },
   {
     "name":"io.ktor.network.selector.LockFreeMPSCQueue",
-    "fields":[{"name":"_cur"}]
+    "fields":[{"name":"curRef"}]
   },
   {
     "name":"io.ktor.network.selector.LockFreeMPSCQueueCore",
-    "fields":[{"name":"_next"}, {"name":"_state"}]
+    "fields":[{"name":"nextRef"}, {"name":"stateRef"}]
   },
   {
     "name":"io.ktor.network.selector.SelectableBase",
     "fields":[{"name":"_interestedOps"}]
+  },
+  {
+    "name":"io.ktor.network.sockets.SocketBase",
+    "fields":[{"name":"actualCloseFlag"}, {"name":"closeFlag"}, {"name":"readerJob"}, {"name":"writerJob"}]
   },
   {
     "name":"io.ktor.server.application.PluginInstance"
@@ -165,6 +172,9 @@
   },
   {
     "name":"io.ktor.server.request.DoubleReceivePreventionToken"
+  },
+  {
+    "name":"io.ktor.server.routing.RoutingCall"
   },
   {
     "name":"io.ktor.server.routing.RoutingRoot"
@@ -181,7 +191,7 @@
   },
   {
     "name":"io.ktor.util.internal.LockFreeLinkedListNode",
-    "fields":[{"name":"_next"}, {"name":"_prev"}, {"name":"_removedRef"}]
+    "fields":[{"name":"_next"}, {"name":"_prev"}, {"name":"removedRef"}]
   },
   {
     "name":"io.ktor.util.reflect.TypeInfo"
@@ -198,123 +208,79 @@
     "fields":[{"name":"top"}]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.CallToolRequest",
+    "name":"io.modelcontextprotocol.kotlin.sdk.server.FeatureNotificationService",
+    "fields":[{"name":"emitJobs"}, {"name":"sessionNotificationJobs"}]
+  },
+  {
+    "name":"io.modelcontextprotocol.kotlin.sdk.server.FeatureRegistry",
+    "fields":[{"name":"listeners"}, {"name":"registry"}]
+  },
+  {
+    "name":"io.modelcontextprotocol.kotlin.sdk.server.ServerSessionRegistry",
+    "fields":[{"name":"registry"}]
+  },
+  {
+    "name":"io.modelcontextprotocol.kotlin.sdk.server.SessionNotificationJob",
+    "fields":[{"name":"resourceSubscriptions"}]
+  },
+  {
+    "name":"io.modelcontextprotocol.kotlin.sdk.shared.Protocol",
+    "fields":[{"name":"_notificationHandlers"}, {"name":"_progressHandlers"}, {"name":"_requestHandlers"}, {"name":"_responseHandlers"}]
+  },
+  {
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.CallToolResult",
     "fields":[{"name":"Companion"}]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.CallToolRequest$Companion",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.CallToolResult$Companion",
     "methods":[{"name":"serializer","parameterTypes":[] }]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.CallToolResult",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.EmptyResult",
     "fields":[{"name":"Companion"}]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.CallToolResult$Companion",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.EmptyResult$Companion",
     "methods":[{"name":"serializer","parameterTypes":[] }]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.InitializeRequest",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.InitializeResult",
     "fields":[{"name":"Companion"}]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.InitializeRequest$Companion",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.InitializeResult$Companion",
     "methods":[{"name":"serializer","parameterTypes":[] }]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.InitializeResult",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse",
     "fields":[{"name":"Companion"}]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.InitializeResult$Companion",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.JSONRPCResponse$Companion",
     "methods":[{"name":"serializer","parameterTypes":[] }]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult",
     "fields":[{"name":"Companion"}]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.JSONRPCResponse$Companion",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.ListToolsResult$Companion",
     "methods":[{"name":"serializer","parameterTypes":[] }]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.RequestId$NumberId",
     "fields":[{"name":"Companion"}]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListResourceTemplatesRequest$Companion",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.RequestId$NumberId$Companion",
     "methods":[{"name":"serializer","parameterTypes":[] }]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.TextContent",
     "fields":[{"name":"Companion"}]
   },
   {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListResourcesRequest$Companion",
-    "methods":[{"name":"serializer","parameterTypes":[] }]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListResourcesResult",
-    "fields":[{"name":"Companion"}]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListResourcesResult$Companion",
-    "methods":[{"name":"serializer","parameterTypes":[] }]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListToolsRequest",
-    "fields":[{"name":"Companion"}]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListToolsRequest$Companion",
-    "methods":[{"name":"serializer","parameterTypes":[] }]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListToolsResult",
-    "fields":[{"name":"Companion"}]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ListToolsResult$Companion",
-    "methods":[{"name":"serializer","parameterTypes":[] }]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.PingRequest",
-    "fields":[{"name":"Companion"}]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.PingRequest$Companion",
-    "methods":[{"name":"serializer","parameterTypes":[] }]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest",
-    "fields":[{"name":"Companion"}]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ReadResourceRequest$Companion",
-    "methods":[{"name":"serializer","parameterTypes":[] }]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ReadResourceResult",
-    "fields":[{"name":"Companion"}]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.ReadResourceResult$Companion",
-    "methods":[{"name":"serializer","parameterTypes":[] }]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.TextContent",
-    "fields":[{"name":"Companion"}]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.TextContent$Companion",
-    "methods":[{"name":"serializer","parameterTypes":[] }]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.TextResourceContents",
-    "fields":[{"name":"Companion"}]
-  },
-  {
-    "name":"io.modelcontextprotocol.kotlin.sdk.TextResourceContents$Companion",
+    "name":"io.modelcontextprotocol.kotlin.sdk.types.TextContent$Companion",
     "methods":[{"name":"serializer","parameterTypes":[] }]
   },
   {
@@ -447,6 +413,9 @@
   {
     "name":"kotlinx.coroutines.EventLoopImplBase",
     "fields":[{"name":"_delayed$volatile"}, {"name":"_isCompleted$volatile"}, {"name":"_queue$volatile"}]
+  },
+  {
+    "name":"kotlinx.coroutines.Job"
   },
   {
     "name":"kotlinx.coroutines.JobSupport",
@@ -634,10 +603,6 @@
   },
   {
     "name":"sun.security.x509.ExtendedKeyUsageExtension",
-    "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
-  },
-  {
-    "name":"sun.security.x509.IssuerAlternativeNameExtension",
     "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
   },
   {

@@ -2,8 +2,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.8.21"
-    kotlin("plugin.serialization") version "2.1.20"
+    kotlin("jvm") version "2.2.10"
+    kotlin("plugin.serialization") version "2.2.10"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("org.graalvm.buildtools.native") version "0.10.6"
     application
@@ -25,7 +25,8 @@ dependencies {
     implementation("com.charleskorn.kaml:kaml:0.53.0")
     implementation("ch.qos.logback:logback-core:1.5.13")
     implementation("ch.qos.logback:logback-classic:1.5.13")
-    implementation("io.modelcontextprotocol:kotlin-sdk:0.5.0")
+    implementation("io.modelcontextprotocol:kotlin-sdk:0.8.1")
+    implementation("io.ktor:ktor-server-cio:3.2.3")
     testImplementation(kotlin("test"))
 }
 

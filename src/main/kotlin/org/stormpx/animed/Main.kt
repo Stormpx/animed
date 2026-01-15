@@ -176,7 +176,7 @@ class DieOtaku (
             } catch (e: MissingRequiredPropertyException) {
                 logger.error("unable read config because: at line ${e.location.line} column ${e.location.column} ${e.message}")
             }catch (e: Exception){
-                logger.error(e.message)
+                logger.error(e.toString())
             }
         }, delay, delay,TimeUnit.SECONDS)
 
