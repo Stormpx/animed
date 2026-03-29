@@ -194,6 +194,38 @@ class McpServer(private val otaku: DieOtaku) {
             }
         }
 
+        server.addTool(
+            name = "del-animed-worker",
+            description = "Animed服务删除一个动画监听配置".trimIndent(),
+            inputSchema = ToolSchema(
+                properties = buildJsonObject {
+                    putJsonObject("id") {
+                        put("type", "string")
+                    }
+                },
+                required = listOf("id")
+            ),
+        ){ request ->
+            val args = request.arguments
+            if (args==null){
+                return@addTool CallToolResult(content = listOf(TextContent("Argument is empty")), isError = true)
+            }
+
+            val id = args["id"]!!.jsonPrimitive.content
+            try {
+                otaku.config.removeAnime(id);
+
+                CallToolResult(
+                    content = listOf(TextContent("Success"))
+                )
+            } catch (e: Exception) {
+                CallToolResult(
+                    content = listOf(TextContent(e.message.orEmpty())),
+                    isError = true
+                )
+            }
+        }
+
         return server
     }
 
