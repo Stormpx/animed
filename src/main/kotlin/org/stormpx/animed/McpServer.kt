@@ -84,12 +84,16 @@ class McpServer(private val otaku: DieOtaku) {
                     putJsonObject("keyword") {
                         put("type", "string")
                     }
+                    putJsonObject("size") {
+                        put("type","number")
+                    }
                 },
                 required = listOf("source","keyword")
             ),
         ) { request ->
             val source = request.arguments?.get("source")!!.jsonPrimitive.content
             val keyword = request.arguments!!["keyword"]!!.jsonPrimitive.content
+            val size = request.arguments!!["size"]?.jsonPrimitive?.longOrNull?.toInt()
             val website = AnimeRss.Website.entries.find { it.name.equals(source,true) }
             if (website == null) {
                 return@addTool CallToolResult(content = listOf(TextContent("Source '$source' Unavailable")), isError = true)
@@ -98,7 +102,7 @@ class McpServer(private val otaku: DieOtaku) {
             val result = otaku.animeRss.getRssContent(website, keyword)
             val list = ListAnime(result.url,result.channel.items
                 .mapIndexed{idx,item-> AnimeItem(idx.toString(),item.title,item.pubDate?.format(pattern)?:"unknown") }
-                .take(8))
+                .take(size ?: 8))
             CallToolResult(
                 content = listOf(TextContent(Json.encodeToString(list)))
             )
