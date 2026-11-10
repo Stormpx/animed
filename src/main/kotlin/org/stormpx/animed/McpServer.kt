@@ -41,6 +41,9 @@ class McpServer(private val otaku: DieOtaku) {
     @Serializable
     data class ListAnime(val url:String, val animes:List<AnimeItem>)
 
+    private fun errorResult(message: String): CallToolResult =
+        CallToolResult(content = listOf(TextContent(message)), isError = true)
+
     private var server:EmbeddedServer<CIOApplicationEngine,CIOApplicationEngine.Configuration>?=null
     var host: String?=null
     var port: Int?=null
@@ -91,15 +94,24 @@ class McpServer(private val otaku: DieOtaku) {
                 required = listOf("source","keyword")
             ),
         ) { request ->
-            val source = request.arguments?.get("source")!!.jsonPrimitive.content
-            val keyword = request.arguments!!["keyword"]!!.jsonPrimitive.content
-            val size = request.arguments!!["size"]?.jsonPrimitive?.longOrNull?.toInt()
+            val args = request.arguments
+                ?: return@addTool errorResult("Missing arguments: 'source' and 'keyword' are required")
+            val source = args["source"]?.jsonPrimitive?.contentOrNull
+                ?: return@addTool errorResult("Missing argument 'source'")
+            val keyword = args["keyword"]?.jsonPrimitive?.contentOrNull
+                ?: return@addTool errorResult("Missing argument 'keyword'")
+            val size = args["size"]?.jsonPrimitive?.longOrNull?.toInt()
             val website = AnimeRss.Website.entries.find { it.name.equals(source,true) }
             if (website == null) {
-                return@addTool CallToolResult(content = listOf(TextContent("Source '$source' Unavailable")), isError = true)
+                val available = AnimeRss.Website.entries.joinToString(", ") { it.name }
+                return@addTool errorResult("Unknown source '$source'. Available sources: $available")
             }
             val pattern = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-            val result = otaku.animeRss.getRssContent(website, keyword)
+            val result = try {
+                otaku.animeRss.getRssContent(website, keyword)
+            } catch (e: Exception) {
+                return@addTool errorResult("Failed to read RSS from ${website.name} for keyword '$keyword': ${e.message ?: e.javaClass.simpleName}")
+            }
             val list = ListAnime(result.url,result.channel.items
                 .mapIndexed{idx,item-> AnimeItem(idx.toString(),item.title,item.pubDate?.format(pattern)?:"unknown") }
                 .take(size ?: 8))
@@ -118,6 +130,9 @@ class McpServer(private val otaku: DieOtaku) {
                     }
                     putJsonObject("rss") {
                         put("type", "string")
+                    }
+                    putJsonObject("bgmId") {
+                        put("type","number")
                     }
                     putJsonObject("immediately") {
                         put("type","boolean")
@@ -149,31 +164,37 @@ class McpServer(private val otaku: DieOtaku) {
         ){ request->
             val args = request.arguments
             if (args==null){
-                io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
-                return@addTool CallToolResult(content = listOf(TextContent("Argument is empty")), isError = true)
+                return@addTool errorResult("Missing arguments: 'id', 'rss', 'titles', 'downloader' and 'downloadPath' are required")
             }
 
-            val id = args["id"]!!.jsonPrimitive.content
-            val rss = args["rss"]!!.jsonPrimitive.content
+            val id = args["id"]?.jsonPrimitive?.contentOrNull
+                ?: return@addTool errorResult("Missing argument 'id'")
+            val rss = args["rss"]?.jsonPrimitive?.contentOrNull
+                ?: return@addTool errorResult("Missing argument 'rss'")
+            val bgmId = args["bgmId"]?.jsonPrimitive?.intOrNull
             val immediately = args["immediately"]?.jsonPrimitive?.boolean
             val startEpisode = args["startEpisode"]?.jsonPrimitive?.doubleOrNull
             val finalEpisode = args["finalEpisode"]?.jsonPrimitive?.doubleOrNull
             val refreshInterval = args["refreshInterval"]?.jsonPrimitive?.longOrNull
-            val titles = args["titles"]!!.jsonArray.map { it.jsonPrimitive.content }.toTypedArray()
-            val downloader = args["downloader"]!!.jsonPrimitive.content
-            val downloadPath = args["downloadPath"]!!.jsonPrimitive.content
+            val titles = args["titles"]?.jsonArray?.map { it.jsonPrimitive.content }?.toTypedArray()
+                ?: return@addTool errorResult("Missing argument 'titles'")
+            val downloader = args["downloader"]?.jsonPrimitive?.contentOrNull
+                ?: return@addTool errorResult("Missing argument 'downloader'")
+            val downloadPath = args["downloadPath"]?.jsonPrimitive?.contentOrNull
+                ?: return@addTool errorResult("Missing argument 'downloadPath'")
 
 
             if (titles.isEmpty()){
-                return@addTool CallToolResult(content = listOf(TextContent("Titles is empty")), isError = true)
+                return@addTool errorResult("'titles' must not be empty: at least one title is required to match RSS items")
             }
             if (otaku.getDownloader(downloader)==null){
-                return@addTool CallToolResult(content = listOf(TextContent("Downloader '$downloader' does not exists")), isError = true)
+                return@addTool errorResult("Downloader '$downloader' is not configured on the server")
             }
 
             val config = AnimeConfig(
                 id = id,
                 rss = rss,
+                bgmId = bgmId,
                 immediately = immediately?:false,
 //                immediately = false,
                 startEpisode = startEpisode?:-1.0,
@@ -185,16 +206,13 @@ class McpServer(private val otaku: DieOtaku) {
             )
 
             try {
-                otaku.config.addAnime(config);
+                otaku.upsertAnime(config)
 
                 CallToolResult(
                     content = listOf(TextContent(Json.encodeToString(config)))
                 )
             } catch (e: Exception) {
-                CallToolResult(
-                    content = listOf(TextContent(e.message.orEmpty())),
-                    isError = true
-                )
+                errorResult("Failed to save anime config '$id': ${e.message ?: e.javaClass.simpleName}")
             }
         }
 
@@ -210,12 +228,10 @@ class McpServer(private val otaku: DieOtaku) {
                 required = listOf("id")
             ),
         ){ request ->
-            val args = request.arguments
-            if (args==null){
-                return@addTool CallToolResult(content = listOf(TextContent("Argument is empty")), isError = true)
-            }
+            val args = request.arguments ?: return@addTool errorResult("Missing arguments: 'id' is required")
 
-            val id = args["id"]!!.jsonPrimitive.content
+            val id = args["id"]?.jsonPrimitive?.contentOrNull
+                ?: return@addTool errorResult("Missing argument 'id'")
             try {
                 otaku.config.removeAnime(id);
 
@@ -223,10 +239,7 @@ class McpServer(private val otaku: DieOtaku) {
                     content = listOf(TextContent("Success"))
                 )
             } catch (e: Exception) {
-                CallToolResult(
-                    content = listOf(TextContent(e.message.orEmpty())),
-                    isError = true
-                )
+                errorResult("Failed to delete anime config '$id': ${e.message ?: e.javaClass.simpleName}")
             }
         }
 

@@ -1,10 +1,6 @@
 import ch.qos.logback.classic.Level
 import com.charleskorn.kaml.MissingRequiredPropertyException
-import com.charleskorn.kaml.SingleLineStringStyle
-import com.charleskorn.kaml.Yaml
-import com.charleskorn.kaml.YamlConfiguration
 import jakarta.mail.Message
-import kotlinx.serialization.modules.EmptySerializersModule
 import org.simplejavamail.api.email.Recipient
 import org.simplejavamail.api.mailer.Mailer
 import org.simplejavamail.api.mailer.config.TransportStrategy
@@ -15,24 +11,22 @@ import org.slf4j.LoggerFactory
 import org.stormpx.animed.*
 import org.stormpx.animed.download.Aria2Downloader
 import org.stormpx.animed.download.Downloader
-import java.nio.charset.StandardCharsets
-import java.nio.file.AccessDeniedException
 import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.nio.file.StandardOpenOption
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
 import kotlin.io.path.Path
 import kotlin.io.path.exists
+import kotlin.system.exitProcess
 
+private val logger: Logger = LoggerFactory.getLogger("org.stormpx.animed.Main")
 
 fun main(args: Array<String>) {
 
     if (args.isEmpty()){
-        error("no config specified")
+        System.err.println("no config file specified. usage: animed <path/to/config.yaml>")
+        exitProcess(1)
     }
     System.setProperty("jdk.httpclient.keepalive.timeout","0")
     val configPath:String= args[0]
@@ -46,8 +40,8 @@ fun main(args: Array<String>) {
         DieOtaku(configPath,threadPool).start()
 
     } catch (e: Exception) {
-        e.printStackTrace()
-        error(e)
+        logger.error("animed failed to start with config '$configPath'",e)
+        exitProcess(1)
     }
 
 
@@ -89,8 +83,8 @@ class DieOtaku (
                     workers.add(worker)
                     worker
                 }catch (e:Exception){
-                    logger.error(e.message)
-                    return
+                    logger.error("worker [${it.id}] failed to start: ${e.message ?: e.javaClass.simpleName}",e)
+                    return@forEach
                 }
                 logger.info("worker [${worker.id()}] started..")
                 if (it.immediately)
@@ -130,7 +124,7 @@ class DieOtaku (
         if (!config.path().exists()){
             Files.createDirectories(config.path())
         }
-        Animed.animed.markDir(config.path())
+        Animed.INSTANCE.markDir(config.path())
         setLogLevel(if(config.debug){Level.DEBUG}else{Level.INFO})
         users = config.users?: emptyArray()
         config.proxies?.let { Http.proxySelector.setProxies(it.asList()) }
@@ -162,7 +156,11 @@ class DieOtaku (
         handleNewConfig(config)
 
         config.downloader.forEach {
-            downloader[it.id]=newDownloader(it)
+            downloader[it.id] = try {
+                newDownloader(it)
+            } catch (e: Exception) {
+                throw IllegalStateException("invalid downloader config '${it.id}' (uri: '${it.uri}'): ${e.message ?: e.javaClass.simpleName}",e)
+            }
         }
 
         buildMailer(config)
@@ -174,9 +172,9 @@ class DieOtaku (
                 assembleWorker(appConfig)
 
             } catch (e: MissingRequiredPropertyException) {
-                logger.error("unable read config because: at line ${e.location.line} column ${e.location.column} ${e.message}")
+                logger.error("unable to reload config: missing required property at line ${e.location.line} column ${e.location.column}: ${e.message}")
             }catch (e: Exception){
-                logger.error(e.toString())
+                logger.error("unable to reload config, keeping the current settings: ${e.message ?: e.javaClass.simpleName}",e)
             }
         }, delay, delay,TimeUnit.SECONDS)
 
@@ -225,11 +223,16 @@ class DieOtaku (
 
             logger.info("${message.from} send email to ${recipients.map { it.name }} success")
         } catch (e: Exception) {
-            logger.error("",e)
+            logger.error("failed to send notification '${message.subject}' to ${recipients.map { it.name }}",e)
         }
 
 
     }
 
-}
+    fun upsertAnime(anime: AnimeConfig){
+        // bgm 条目信息（id / 总集数）由 Worker 在运行期维护并保存在动画数据里，
+        // 这里只负责把配置落盘。
+        config.addAnime(anime)
+    }
 
+}

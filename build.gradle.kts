@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "org.stormpx"
-version = "0.0.4"
+version = "0.0.5-bgm"
 
 repositories {
     mavenLocal()
@@ -23,6 +23,8 @@ dependencies {
 //    api("com.apptastic:rssreader:2.5.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("com.charleskorn.kaml:kaml:0.53.0")
+    // 繁简 + 日文异体字归一化（标题匹配用），带短语级字典：頭髮->头发、咒術迴戰->咒术回战、戦記->战记
+    implementation("com.github.houbb:opencc4j:1.14.0")
     implementation("ch.qos.logback:logback-core:1.5.13")
     implementation("ch.qos.logback:logback-classic:1.5.13")
     implementation("io.modelcontextprotocol:kotlin-sdk:0.8.1")
@@ -65,7 +67,11 @@ graalvmNative {
     toolchainDetection.set(true)
     binaries {
         named("main") {
-            resources.autodetect()
+            resources {
+                autodetect()
+                // opencc4j 的字典是 classpath 资源，native image 必须显式打进二进制
+                includedPatterns.add("data/dictionary/.*")
+            }
             mainClass.set("MainKt")
             debug.set(false)
             useFatJar.set(true)
