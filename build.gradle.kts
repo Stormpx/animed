@@ -63,6 +63,13 @@ tasks.register("getAppName") {
     }
 }
 
+// native-image 默认按构建机 CPU 探测特性，ARM runner 上会打开 CRC32 / LSE，
+// 树莓派 3/4（Cortex-A53 / A72，ARMv8.0）两者都没有，直接报
+// "machine does not support ... [FP, ASIMD, CRC32, LSE]"。
+// 默认用兼容模式（armv8-a，不含可选扩展）；需要更高性能可用 -PnativeMarch=native 覆盖。
+val nativeMarch: String? = providers.gradleProperty("nativeMarch").orNull
+    ?: if (System.getProperty("os.arch") == "aarch64") "compatibility" else null
+
 graalvmNative {
     toolchainDetection.set(true)
     binaries {
@@ -90,6 +97,7 @@ graalvmNative {
             buildArgs.add("-H:+ReportUnsupportedElementsAtRuntime")
             buildArgs.add("-H:+ReportExceptionStackTraces")
             buildArgs.add("-H:+StaticExecutableWithDynamicLibC")
+            nativeMarch?.let { buildArgs.add("-march=$it") }
             buildArgs.add("--trace-class-initialization=org.slf4j.LoggerFactory,org.slf4j.MarkerFactory")
             jvmArgs.add("-Dsun.jnu.encoding=UTF-8")
             jvmArgs.add("-Dfile.encoding=UTF-8")
