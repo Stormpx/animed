@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "org.stormpx"
-version = "0.0.5-bgm"
+version = "0.0.5"
 
 repositories {
     mavenLocal()

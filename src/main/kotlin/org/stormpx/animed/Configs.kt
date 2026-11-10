@@ -94,35 +94,30 @@ data class AnimeConfig(
 
         other as AnimeConfig
 
-        if (id != other.id) return false
-        if (rss != other.rss) return false
+        if (bgmId != other.bgmId) return false
         if (immediately != other.immediately) return false
         if (startEpisode != other.startEpisode) return false
+        if (finalEpisode != other.finalEpisode) return false
         if (refreshInterval != other.refreshInterval) return false
-        if (patterns != null) {
-            if (other.patterns == null) return false
-            if (!patterns.contentEquals(other.patterns)) return false
-        } else if (other.patterns != null) return false
-        if (titles != null) {
-            if (other.titles == null) return false
-            if (!titles.contentEquals(other.titles)) return false
-        } else if (other.titles != null) return false
+        if (id != other.id) return false
+        if (rss != other.rss) return false
+        if (!patterns.contentEquals(other.patterns)) return false
+        if (!titles.contentEquals(other.titles)) return false
         if (downloader != other.downloader) return false
         if (downloadPath != other.downloadPath) return false
-        if (targets != null) {
-            if (other.targets == null) return false
-            if (!targets.contentEquals(other.targets)) return false
-        } else if (other.targets != null) return false
+        if (!targets.contentEquals(other.targets)) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + rss.hashCode()
+        var result = bgmId.hashCode()
         result = 31 * result + immediately.hashCode()
         result = 31 * result + startEpisode.hashCode()
+        result = 31 * result + finalEpisode.hashCode()
         result = 31 * result + refreshInterval.hashCode()
+        result = 31 * result + id.hashCode()
+        result = 31 * result + rss.hashCode()
         result = 31 * result + (patterns?.contentHashCode() ?: 0)
         result = 31 * result + (titles?.contentHashCode() ?: 0)
         result = 31 * result + downloader.hashCode()
@@ -130,7 +125,6 @@ data class AnimeConfig(
         result = 31 * result + (targets?.contentHashCode() ?: 0)
         return result
     }
-
 }
 
 @Serializable
