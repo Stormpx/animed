@@ -67,7 +67,7 @@ private val idRegex: Regex= Regex.escapeReplacement("#id#").toRegex()
 @Serializable
 data class AnimeConfig(
     val id:String,
-    val bgmId:Int?,
+    val bgmId:Int?=null,
     val rss:String,
     val immediately: Boolean = false,
     @SerialName("start_episode")

@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
 
       - name: make gradlew executable
         run: chmod +x ./gradlew
@@ -87,7 +87,8 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          # 只是用来跑 ./gradlew -q getVersion，但 Gradle 9 + JDK25 toolchain 统一用 25
+          java-version: '25'
 
       - name: make gradlew executable
         run: chmod +x ./gradlew

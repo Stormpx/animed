@@ -2,10 +2,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "2.2.10"
-    kotlin("plugin.serialization") version "2.2.10"
-    id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("org.graalvm.buildtools.native") version "0.10.6"
+    kotlin("jvm") version "2.4.21"
+    kotlin("plugin.serialization") version "2.4.21"
+    id("com.gradleup.shadow") version "9.6.1"
+    id("org.graalvm.buildtools.native") version "1.1.18"
     application
 }
 
@@ -37,13 +37,13 @@ tasks.test {
 }
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
 
 tasks.withType<KotlinCompile> {
     compilerOptions{
-        jvmTarget.set(JvmTarget.JVM_21)
+        jvmTarget.set(JvmTarget.JVM_25)
     }
 }
 
@@ -74,17 +74,17 @@ graalvmNative {
             }
             mainClass.set("MainKt")
             debug.set(false)
-            useFatJar.set(true)
-            fallback.set(false)
             verbose.set(true)
             quickBuild.set(true)
             javaLauncher.set(javaToolchains.launcherFor {
-                languageVersion.set(JavaLanguageVersion.of(21))
-                vendor.set(JvmVendorSpec.matching("Oracle Corporation"))
+                languageVersion.set(JavaLanguageVersion.of(25))
+                vendor.set(JvmVendorSpec.matching("GraalVM Community"))
             })
 
-            buildArgs.add("--initialize-at-build-time=org.slf4j.loggerFactory,ch.qos.logback,io.ktor.network,kotlin,kotlinx")
-            buildArgs.add("--initialize-at-build-time=org.slf4j.helpers.Reporter")
+            buildArgs.add("--initialize-at-build-time=ch.qos.logback,io.ktor.network,kotlin,kotlinx")
+            // slf4j 2.x 的 Reporter 把 Reporter$TargetChoice / Reporter$Level 等枚举常量放在静态字段里，
+            // 只标记 Reporter 本身会让这些常量跨“构建期/运行期”边界，分析阶段直接失败
+            buildArgs.add("--initialize-at-build-time=org.slf4j.helpers")
             buildArgs.add("--initialize-at-run-time=kotlin.uuid,io.modelcontextprotocol")
             buildArgs.add("-H:+InstallExitHandlers")
             buildArgs.add("-H:+ReportUnsupportedElementsAtRuntime")

@@ -1,0 +1,8 @@
+# 交给 builder 的只有源码，构建产物/本地缓存不进上下文（Dockerfile 里是 COPY . /animed）
+.git
+.gradle
+.kotlin
+.idea
+build
+*.iml
+.DS_Store
