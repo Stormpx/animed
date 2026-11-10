@@ -25,10 +25,12 @@ class Aria2Client(
 
     private var secretToken:String? =null
     init {
-        token?.isNotBlank().let {
-            secretToken="token:$token";
-        }
+        secretToken = token?.takeIf { it.isNotBlank() }?.let { "token:$it" }
+    }
 
+    private fun responseBody(response: java.net.http.HttpResponse<InputStream>): String {
+        val body = runCatching { response.body().readAllBytes().toString(StandardCharsets.UTF_8) }.getOrNull()
+        return if (body.isNullOrBlank()) "" else ": $body"
     }
 
     fun addUri(uri:String,downloadPath:String): JsonRpcResult<String, Unit> {
@@ -49,11 +51,10 @@ class Aria2Client(
         val response = Http.client
             .send(HttpRequest.newBuilder(serverUri)
                 .timeout(Duration.ofMinutes(1))
-                .header("content-type","application/json;charset=uft-8")
+                .header("content-type","application/json;charset=utf-8")
                 .POST(BodyPublishers.ofString(json)).build(),BodyHandlers.ofInputStream());
         if (response.statusCode()!=200){
-//            println(response.body().readAllBytes().toString(StandardCharsets.UTF_8))
-            throw RuntimeException("request aria2.addUri return statuscode ${response.statusCode()}");
+            throw IllegalStateException("aria2 request 'aria2.addUri' to '$serverUri' failed with HTTP ${response.statusCode()}${responseBody(response)}")
         }
 
         return Json.decodeFromStream(JsonRpcResult.serializer(String.serializer(),Unit.serializer()),response.body())
@@ -79,11 +80,11 @@ class Aria2Client(
         val response = Http.client
             .send(HttpRequest.newBuilder(serverUri)
                 .timeout(Duration.ofMinutes(1))
-                .header("content-type","application/json;charset=uft-8")
+                .header("content-type","application/json;charset=utf-8")
                 .POST(BodyPublishers.ofString(json)).build(),BodyHandlers.ofInputStream());
 
         if (response.statusCode()!=200){
-            throw RuntimeException("request aria2.addTorrent return statuscode ${response.statusCode()}");
+            throw IllegalStateException("aria2 request 'aria2.addTorrent' to '$serverUri' failed with HTTP ${response.statusCode()}${responseBody(response)}")
         }
 
         return Json.decodeFromStream(JsonRpcResult.serializer(String.serializer(),Unit.serializer()),response.body())

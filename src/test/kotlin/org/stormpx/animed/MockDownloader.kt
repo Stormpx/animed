@@ -11,4 +11,8 @@ class MockDownloader : Downloader {
     override fun downloadTorrent(inputStream: InputStream, downloadPath: String): String {
         return ""
     }
+
+    override fun downloadPath(): String {
+        return "/download/"
+    }
 }

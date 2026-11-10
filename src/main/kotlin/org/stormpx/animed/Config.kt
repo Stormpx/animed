@@ -4,15 +4,13 @@ import com.charleskorn.kaml.SingleLineStringStyle
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import kotlinx.serialization.modules.EmptySerializersModule
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
 import java.nio.file.*
+import java.io.IOException
 import java.util.concurrent.locks.ReentrantLock
 
 class Config(private val configPath: Path) {
     companion object{
-        private val logger: Logger = LoggerFactory.getLogger(Config::class.java)
         val yaml = Yaml(
             EmptySerializersModule(), YamlConfiguration(
                 encodeDefaults = false,
@@ -34,6 +32,12 @@ class Config(private val configPath: Path) {
     fun readConfig():AppConfig{
         lock.lock()
         try {
+            if (!Files.exists(configPath)) {
+                throw IllegalStateException("config file '$configPath' does not exist: check the path given on the command line")
+            }
+            if (!Files.isRegularFile(configPath)) {
+                throw IllegalStateException("config file '$configPath' is not a regular file")
+            }
             Files.newInputStream(configPath).use{
                 return yaml.decodeFromStream(AppConfig.serializer(),it, StandardCharsets.UTF_8)
             }
@@ -44,46 +48,44 @@ class Config(private val configPath: Path) {
 
     fun writeConfig(newAppConfig:AppConfig){
         val configPath = configPath
-        val tempPath = Files.createTempFile(configPath.parent,"animed-",".tmp.yaml")
-        yaml.encodeToStream(AppConfig.serializer(),newAppConfig,Files.newOutputStream(tempPath,
-            StandardOpenOption.WRITE,
-            StandardOpenOption.CREATE,
-            StandardOpenOption.SYNC),StandardCharsets.UTF_8)
-
         lock.lock()
+        var tempPath: Path? = null
         try {
-            Files.move(tempPath,configPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-        }catch (e: AccessDeniedException){
-            logger.error("",e)
-            throw RuntimeException("access denied")
+            try {
+                val temp = Files.createTempFile(configPath.parent,"animed-",".tmp.yaml")
+                tempPath = temp
+                yaml.encodeToStream(AppConfig.serializer(),newAppConfig,Files.newOutputStream(temp,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.SYNC),StandardCharsets.UTF_8)
+                Files.move(temp,configPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+            }catch (e: AccessDeniedException){
+                throw IllegalStateException("unable to write config file '$configPath': access denied for '${e.file ?: configPath}'",e)
+            }catch (e: IOException){
+                throw IllegalStateException("unable to write config file '$configPath': ${e.message ?: e.javaClass.simpleName}",e)
+            }finally {
+                tempPath?.let { runCatching { Files.deleteIfExists(it) } }
+            }
         }finally {
             lock.unlock()
-            Files.deleteIfExists(tempPath)
         }
     }
 
     fun addAnime(anime:AnimeConfig){
-        latestConfig?.let {
-            val newAppConfig = it.copy(anime = it.anime.filter { config -> config.id != anime.id }.plus(anime).toTypedArray())
-            try {
-                writeConfig(newAppConfig)
-            }catch (e:AccessDeniedException){
-                logger.error("",e)
-                throw RuntimeException("access denied")
-            }
-        }
+        val latest = latestConfig
+            ?: throw IllegalStateException("config '$configPath' has not been loaded yet, unable to add anime '${anime.id}'")
+        val newAppConfig = latest.copy(anime = latest.anime.filter { config -> config.id != anime.id }.plus(anime).toTypedArray())
+        writeConfig(newAppConfig)
     }
 
     fun removeAnime(id:String){
-        latestConfig?.let {
-            val newAppConfig = it.copy(anime = it.anime.filter { config -> config.id != id }.toTypedArray())
-            try {
-                writeConfig(newAppConfig)
-            }catch (e:AccessDeniedException){
-                logger.error("",e)
-                throw RuntimeException("access denied")
-            }
+        val latest = latestConfig
+            ?: throw IllegalStateException("config '$configPath' has not been loaded yet, unable to remove anime '$id'")
+        if (latest.anime.none { it.id == id }) {
+            throw IllegalArgumentException("anime '$id' is not configured, nothing to remove")
         }
+        val newAppConfig = latest.copy(anime = latest.anime.filter { config -> config.id != id }.toTypedArray())
+        writeConfig(newAppConfig)
     }
 
 }

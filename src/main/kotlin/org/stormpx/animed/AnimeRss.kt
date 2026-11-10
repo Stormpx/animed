@@ -13,7 +13,7 @@ import java.time.Duration
 
 class AnimeRss {
     enum class Website(val url: String) {
-        DMHY("https://dmhy.org/topics/rss/rss.xml"),
+        DMHY("https://api.animes.garden/feed.xml"),
         MIKAN("https://mikanani.me/RSS/Search"),
         NYAASI("https://nyaa.si/?page=rss&c=0_0&f=0"),
         BANGUMI("https://bangumi.moe/rss/search"),
@@ -42,7 +42,7 @@ class AnimeRss {
             )
         logger.info("request $url status_code = ${response.statusCode()}")
         if (response.statusCode() != 200) {
-            throw RuntimeException("")
+            throw IllegalStateException("unable to read RSS feed '$url' (${website.name}): HTTP ${response.statusCode()}")
         }
         val channel = RSSReader(response.body()).read()
         return RssContent(url,channel)

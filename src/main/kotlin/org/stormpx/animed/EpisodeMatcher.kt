@@ -31,7 +31,7 @@ class EpisodeMatcher(pattern:String): Matcher {
         this.regex = ("\\Q$p\\E").toRegex()
 
         if (chapterIndex==-1){
-            throw RuntimeException("#ep# is required.");
+            throw IllegalArgumentException("invalid pattern '$pattern': the '#ep#' placeholder is required to locate the episode number");
         }
     }
 

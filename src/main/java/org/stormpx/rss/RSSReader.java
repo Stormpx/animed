@@ -10,6 +10,7 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -50,7 +51,12 @@ public class RSSReader {
     private LocalDateTime parseDate(String text){
         if (text==null||text.isBlank())
             return null;
-        return LocalDateTime.parse(text,DateTimeFormatter.RFC_1123_DATE_TIME);
+        try {
+            return LocalDateTime.parse(text,DateTimeFormatter.RFC_1123_DATE_TIME);
+        } catch (DateTimeParseException e) {
+            logger.warn("ignoring invalid pubDate '{}': expected RFC 1123 format (e.g. Tue, 10 Jun 2025 12:00:00 GMT)", text);
+            return null;
+        }
     }
     private void readChannelElement() throws XMLStreamException {
         Objects.requireNonNull(channel);
@@ -73,10 +79,12 @@ public class RSSReader {
         String type = xmlReader.getAttributeValue("", "type");
         long length=0L;
 
-        try {
-            length= Long.parseLong(_length);
-        } catch (NumberFormatException e) {
-            logger.warn("parse enclosure attr: length failed");
+        if (_length != null && !_length.isBlank()) {
+            try {
+                length= Long.parseLong(_length);
+            } catch (NumberFormatException e) {
+                logger.warn("ignoring invalid enclosure length '{}': expected a number", _length);
+            }
         }
 
         return new Enclosure(url, length,type);
@@ -113,10 +121,13 @@ public class RSSReader {
                     if (!rss){
                         String localName = xmlReader.getLocalName();
                         if (!Objects.equals(localName, "rss")) {
-                            throw new RuntimeException("");
+                            throw new XMLStreamException(
+                                    "invalid RSS feed: expected root element <rss> but found <" + localName + ">");
                         }
-                        if (!Objects.equals(xmlReader.getAttributeValue(null, "version"), "2.0")) {
-                            throw new RuntimeException("");
+                        String version = xmlReader.getAttributeValue(null, "version");
+                        if (!Objects.equals(version, "2.0")) {
+                            throw new XMLStreamException(
+                                    "unsupported RSS feed version '" + version + "': only RSS 2.0 is supported");
                         }
                         this.rss = true;
                         continue;
@@ -156,6 +167,9 @@ public class RSSReader {
                     readItemElement();
                 }
             }
+        }
+        if (this.channel == null) {
+            throw new XMLStreamException("invalid RSS feed: no <channel> element found");
         }
         this.channel.setItems(items);
         return channel;
