@@ -624,5 +624,45 @@
   {
     "name":"sun.security.x509.SubjectKeyIdentifierExtension",
     "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
-  }
+  },{
+  "name": "com.github.houbb.opencc4j.support.data.impl.STPhraseData",
+  "methods": [
+    {
+      "name": "<init>",
+      "parameterTypes": []
+    }
+  ]
+},{
+  "name": "com.github.houbb.opencc4j.support.data.impl.TSCharData",
+  "methods": [
+    {
+      "name": "<init>",
+      "parameterTypes": []
+    }
+  ]
+},{
+  "name": "com.github.houbb.opencc4j.support.data.impl.TSPhraseData",
+  "methods": [
+    {
+      "name": "<init>",
+      "parameterTypes": []
+    }
+  ]
+},{
+  "name": "com.github.houbb.opencc4j.support.datamap.impl.DataMapDefault",
+  "methods": [
+    {
+      "name": "<init>",
+      "parameterTypes": []
+    }
+  ]
+},{
+  "name": "com.github.houbb.opencc4j.support.segment.impl.FastForwardSegment",
+  "methods": [
+    {
+      "name": "<init>",
+      "parameterTypes": []
+    }
+  ]
+}
 ]
